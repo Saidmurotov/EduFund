@@ -1,244 +1,199 @@
+import admin from "firebase-admin";
 import dotenv from "dotenv";
-import { db } from "../src/lib/firebase-admin.js";
 
 dotenv.config();
 
-const grants = [
+if (!admin.apps.length) {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({ credential: admin.credential.cert(sa) });
+  } else {
+    admin.initializeApp({ credential: admin.credential.applicationDefault() });
+  }
+}
+
+const db = admin.firestore();
+const COLLECTION = "opportunities";
+
+const NEW_GRANTS = [
+  // Conference
   {
-    opportunityId: "grant_001",
-    title: "DAAD Research Scholarship 2025",
-    type: "scholarship",
+    opportunityId: "grant_021",
+    title: "IEEE International Conference on AI — Travel Grant",
+    type: "conference",
+    country: "USA",
+    organization: "IEEE",
+    degree: ["bachelor", "master", "phd"],
+    field: ["IT & CS", "Engineering"],
+    fundingType: "full",
+    amount: "$2,000 travel + registration",
+    language: "English",
+    minGPA: 3.0,
+    minIELTS: 6.0,
+    deadline: "2026-06-15",
+    trustScore: 95,
+    verificationStatus: "verified",
+    sourceUrl: "https://ieee.org",
+    description:
+      "IEEE xalqaro sun'iy intellekt konferensiyasi uchun sayohat granti. Maqola qabul qilingan talabalar uchun to'liq sayohat va ro'yxatga olish xarajatlari qoplanadi.",
+  },
+  {
+    opportunityId: "grant_022",
+    title: "UNESCO Youth Climate Conference Grant",
+    type: "conference",
+    country: "France",
+    organization: "UNESCO",
+    degree: ["bachelor", "master", "phd"],
+    field: ["All Fields"],
+    fundingType: "full",
+    amount: "€1,500 travel + accommodation",
+    language: "English / French",
+    minGPA: 0,
+    minIELTS: 5.5,
+    deadline: "2026-04-30",
+    trustScore: 98,
+    verificationStatus: "verified",
+    sourceUrl: "https://unesco.org",
+    description:
+      "UNESCO iqlim o'zgarishi bo'yicha yoshlar konferensiyasi. Dunyo bo'ylab 200+ yoshlar ishtirok etadi. To'liq sayohat va turar joy xarajatlari qoplanadi.",
+  },
+  // Research
+  {
+    opportunityId: "grant_023",
+    title: "DAAD Research Fellowship for Developing Countries",
+    type: "research",
     country: "Germany",
     organization: "DAAD",
     degree: ["master", "phd"],
     field: ["All Fields"],
     fundingType: "full",
-    amount: "€850/month + tuition",
-    language: "German B2 or English B2",
-    minGPA: 3.0,
+    amount: "€1,200/month + travel",
+    language: "English / German",
+    minGPA: 3.2,
     minIELTS: 6.5,
-    deadline: "2026-03-15",
-    trustScore: 95,
+    deadline: "2026-07-31",
+    trustScore: 97,
     verificationStatus: "verified",
-    sourceUrl: "https://www.daad.de",
+    sourceUrl: "https://daad.de",
     description:
-      "DAAD research scholarship for international students pursuing advanced studies and research in Germany.",
-    embedding: [],
-    createdAt: new Date(),
+      "Rivojlanayotgan mamlakatlar talabalari uchun Germaniyada ilmiy tadqiqot olib borish imkoniyati. 6-12 oylik dastur.",
   },
   {
-    opportunityId: "grant_002",
-    title: "Humboldt Research Fellowship",
-    type: "fellowship",
-    country: "Germany",
-    organization: "Alexander von Humboldt Foundation",
+    opportunityId: "grant_024",
+    title: "JSPS Research Fellowship — Japan",
+    type: "research",
+    country: "Japan",
+    organization: "JSPS",
     degree: ["phd"],
     field: ["All Fields"],
     fundingType: "full",
-    amount: "€2,700/month + research costs",
-    language: "English B2",
-    minGPA: 3.2,
-    minIELTS: 6.5,
-    deadline: "2026-04-20",
-    trustScore: 92,
-    verificationStatus: "verified",
-    sourceUrl: "https://www.humboldt-foundation.de",
-    description:
-      "International research fellowship for postdoctoral researchers at German institutions.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_003",
-    title: "Deutschlandstipendium",
-    type: "scholarship",
-    country: "Germany",
-    organization: "German Universities",
-    degree: ["bachelor", "master"],
-    field: ["All Fields"],
-    fundingType: "partial",
-    amount: "€300/month",
-    language: "German B1 or English B2",
-    minGPA: 3.0,
+    amount: "¥362,000/month",
+    language: "English / Japanese",
+    minGPA: 3.5,
     minIELTS: 6.0,
-    deadline: "2026-06-01",
-    trustScore: 85,
-    verificationStatus: "verified",
-    sourceUrl: "https://www.deutschlandstipendium.de",
-    description:
-      "Merit-based scholarship funded by the German government and private sponsors.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_004",
-    title: "Erasmus+ Germany Exchange (Partner Universities)",
-    type: "exchange",
-    country: "Germany",
-    organization: "Erasmus+",
-    degree: ["bachelor", "master"],
-    field: ["All Fields"],
-    fundingType: "partial",
-    amount: "€490/month",
-    language: "English B2",
-    minGPA: 2.8,
-    minIELTS: 6.0,
-    deadline: "2026-05-10",
-    trustScore: 88,
-    verificationStatus: "verified",
-    sourceUrl: "https://erasmus-plus.ec.europa.eu",
-    description:
-      "Semester exchange opportunity for eligible partner universities in Germany.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_005",
-    title: "GKS (Global Korea Scholarship) Graduate Program",
-    type: "scholarship",
-    country: "South Korea",
-    organization: "NIIED",
-    degree: ["master", "phd"],
-    field: ["All Fields"],
-    fundingType: "full",
-    amount: "₩1,000,000/month + tuition",
-    language: "Korean TOPIK preferred / English B2",
-    minGPA: 3.0,
-    minIELTS: 6.0,
-    deadline: "2026-03-01",
-    trustScore: 93,
-    verificationStatus: "verified",
-    sourceUrl: "https://www.studyinkorea.go.kr",
-    description:
-      "Fully funded scholarship for international students pursuing graduate degrees in Korea.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_006",
-    title: "KGSP Undergraduate Track (Partner Universities)",
-    type: "scholarship",
-    country: "South Korea",
-    organization: "NIIED",
-    degree: ["bachelor"],
-    field: ["All Fields"],
-    fundingType: "full",
-    amount: "₩900,000/month + tuition",
-    language: "English B2",
-    minGPA: 3.0,
-    minIELTS: 6.0,
-    deadline: "2026-02-28",
-    trustScore: 90,
-    verificationStatus: "verified",
-    sourceUrl: "https://www.studyinkorea.go.kr",
-    description:
-      "Undergraduate scholarship program for international students in South Korea.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_007",
-    title: "Korean University Research Internship",
-    type: "internship",
-    country: "South Korea",
-    organization: "University Labs",
-    degree: ["bachelor", "master"],
-    field: ["STEM"],
-    fundingType: "partial",
-    amount: "₩500,000/month",
-    language: "English B2",
-    minGPA: 3.0,
-    minIELTS: 6.0,
-    deadline: "2026-07-01",
-    trustScore: 78,
-    verificationStatus: "pending",
-    sourceUrl: "https://example.com",
-    description:
-      "Research internship opportunities in Korean university labs (varies by institution).",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_008",
-    title: "Fulbright Foreign Student Program",
-    type: "scholarship",
-    country: "USA",
-    organization: "Fulbright",
-    degree: ["master", "phd"],
-    field: ["All Fields"],
-    fundingType: "full",
-    amount: "Tuition + stipend + travel",
-    language: "English C1",
-    minGPA: 3.2,
-    minIELTS: 7.0,
-    deadline: "2026-05-01",
+    deadline: "2026-05-15",
     trustScore: 96,
     verificationStatus: "verified",
-    sourceUrl: "https://foreign.fulbrightonline.org",
+    sourceUrl: "https://jsps.go.jp",
     description:
-      "Prestigious fully-funded program for graduate study and research in the United States.",
-    embedding: [],
-    createdAt: new Date(),
+      "Yaponiya Fan Jamiyati PhD talabalar uchun tadqiqot fellowship dasturi. 12-24 oy davomida Yaponiyaning yetakchi universitetlarida tadqiqot.",
   },
+  // Stajirovka
   {
-    opportunityId: "grant_009",
-    title: "Humphrey Fellowship Program",
-    type: "fellowship",
+    opportunityId: "grant_025",
+    title: "Google STEP Internship — Software Engineering",
+    type: "stajirovka",
     country: "USA",
-    organization: "Fulbright",
-    degree: ["master"],
-    field: ["Public Policy", "Development", "Leadership"],
-    fundingType: "full",
-    amount: "Tuition + stipend + travel",
-    language: "English C1",
-    minGPA: 3.0,
-    minIELTS: 7.0,
-    deadline: "2026-06-15",
-    trustScore: 94,
-    verificationStatus: "verified",
-    sourceUrl: "https://www.humphreyfellowship.org",
-    description:
-      "Non-degree fellowship for experienced professionals to enhance leadership skills in the USA.",
-    embedding: [],
-    createdAt: new Date(),
-  },
-  {
-    opportunityId: "grant_010",
-    title: "USA University Exchange Semester",
-    type: "exchange",
-    country: "USA",
-    organization: "Partner Universities",
-    degree: ["bachelor", "master"],
-    field: ["All Fields"],
-    fundingType: "partial",
-    amount: "Partial tuition waiver",
-    language: "English B2",
+    organization: "Google",
+    degree: ["bachelor"],
+    field: ["IT & CS"],
+    fundingType: "stipend",
+    amount: "$8,000/month + housing",
+    language: "English",
     minGPA: 3.0,
     minIELTS: 6.5,
-    deadline: "2026-08-01",
-    trustScore: 80,
-    verificationStatus: "pending",
-    sourceUrl: "https://example.com",
+    deadline: "2026-03-01",
+    trustScore: 99,
+    verificationStatus: "verified",
+    sourceUrl: "https://google.com/careers",
     description:
-      "Exchange semester options at partner universities in the USA (availability varies).",
-    embedding: [],
-    createdAt: new Date(),
-  }
+      "Google STEP amaliyot dasturi — 1-2 kurs talabalari uchun 12 haftalik dasturiy ta'minot muhandisligi amaliyoti.",
+  },
+  {
+    opportunityId: "grant_026",
+    title: "Samsung SDS Global Internship",
+    type: "stajirovka",
+    country: "South Korea",
+    organization: "Samsung SDS",
+    degree: ["bachelor", "master"],
+    field: ["IT & CS", "Engineering"],
+    fundingType: "stipend",
+    amount: "₩2,500,000/month + dormitory",
+    language: "English / Korean",
+    minGPA: 3.0,
+    minIELTS: 6.0,
+    deadline: "2026-04-15",
+    trustScore: 93,
+    verificationStatus: "verified",
+    sourceUrl: "https://samsungsds.com",
+    description:
+      "Samsung SDS xalqaro amaliyot dasturi — IT va muhandislik sohasidagi talabalar uchun 8 haftalik amaliyot Seulda.",
+  },
+  // Language Program
+  {
+    opportunityId: "grant_027",
+    title: "Goethe-Institut German Language Scholarship",
+    type: "language_program",
+    country: "Germany",
+    organization: "Goethe-Institut",
+    degree: ["high_school", "bachelor", "master", "phd"],
+    field: ["All Fields"],
+    fundingType: "full",
+    amount: "€3,000 (course + accommodation)",
+    language: "German",
+    minGPA: 0,
+    minIELTS: 0,
+    deadline: "2026-05-30",
+    trustScore: 96,
+    verificationStatus: "verified",
+    sourceUrl: "https://goethe.de",
+    description:
+      "Goethe-Institut nemis tili intensiv kurs stipendiyasi. 4-8 haftalik Germaniyada yashab o'rganish dasturi.",
+  },
+  {
+    opportunityId: "grant_028",
+    title: "Korean Government Scholarship — Korean Language Program",
+    type: "language_program",
+    country: "South Korea",
+    organization: "NIIED",
+    degree: ["high_school", "bachelor", "master"],
+    field: ["All Fields"],
+    fundingType: "full",
+    amount: "₩800,000/month + tuition",
+    language: "Korean",
+    minGPA: 2.5,
+    minIELTS: 0,
+    deadline: "2026-03-15",
+    trustScore: 97,
+    verificationStatus: "verified",
+    sourceUrl: "https://studyinkorea.go.kr",
+    description:
+      "Koreya hukumati stipendiyasi — 1 yillik koreys tili o'rganish dasturi. To'liq moliyalashtiriladi: kurs xarajatlari, stipendiya, sug'urta.",
+  },
 ];
 
-async function main() {
-  for (const g of grants) {
-    await db
-      .collection("opportunities")
-      .doc(g.opportunityId)
-      .set(g, { merge: true });
-    console.log(`✓ Added: ${g.title}`);
+async function seed() {
+  console.log("Seeding new grants...");
+  for (const grant of NEW_GRANTS) {
+    const ref = db.collection(COLLECTION).doc(grant.opportunityId);
+    await ref.set({ ...grant, createdAt: new Date() }, { merge: true });
+    console.log(`  ✓ ${grant.opportunityId}: ${grant.title}`);
   }
-  console.log(`Done. Seeded ${grants.length} grants.`);
+  console.log(`Done. ${NEW_GRANTS.length} grants seeded.`);
+  process.exit(0);
 }
 
-main().catch((err) => {
+seed().catch((err) => {
   console.error("Seed error:", err);
-  process.exitCode = 1;
+  process.exit(1);
 });
-

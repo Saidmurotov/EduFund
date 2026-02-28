@@ -1,36 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Bookmark, ExternalLink } from "lucide-react";
+import { ArrowLeft, Bookmark, ExternalLink, Calendar } from "lucide-react";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import { api, withAuth } from "../lib/api.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { SkeletonLine } from "../components/ui/Skeleton.jsx";
 import { useToast } from "../context/ToastContext.jsx";
-
-function countryFlag(country) {
-  const map = {
-    Germany: "🇩🇪",
-    "South Korea": "🇰🇷",
-    USA: "🇺🇸",
-    UK: "🇬🇧",
-    Austria: "🇦🇹",
-    Japan: "🇯🇵",
-    China: "🇨🇳",
-    France: "🇫🇷",
-  };
-  return map[country] || "🌍";
-}
-
-function initials(name) {
-  const n = String(name || "").trim();
-  if (!n) return "GR";
-  const parts = n.split(/\s+/).filter(Boolean);
-  return (parts[0]?.[0] + (parts[1]?.[0] || "")).toUpperCase();
-}
+import { countryFlag, initials } from "../lib/utils.js";
 
 function TrustBadge({ trustScore, verificationStatus }) {
   const score = typeof trustScore === "number" ? trustScore : 0;
@@ -105,6 +85,8 @@ export default function GrantDetail() {
   const [matchPercent, setMatchPercent] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [userPrefs, setUserPrefs] = useState(null);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -127,6 +109,14 @@ export default function GrantDetail() {
         const list = Array.isArray(mRes.data) ? mRes.data : [];
         const matched = list.find((x) => String(x.id) === String(id));
         setMatchPercent(matched?.matchPercent || 0);
+
+        // Fetch user preferences for real match analysis
+        if (user?.uid && db) {
+          const userSnap = await getDoc(doc(db, "users", user.uid));
+          if (userSnap.exists()) {
+            setUserPrefs(userSnap.data()?.preferences || {});
+          }
+        }
       } catch (e) {
         console.error(e);
         if (!alive) return;
@@ -141,14 +131,76 @@ export default function GrantDetail() {
     };
   }, [id, user?.uid, getIdToken]);
 
-  const matchChecks = useMemo(
-    () => [
-      { ok: true, label: "✓ GPA Requirements met" },
-      { ok: true, label: "✓ IELTS Score sufficient" },
-      { ok: true, label: "✓ Field Eligible" },
-    ],
-    []
-  );
+  const matchChecks = useMemo(() => {
+    if (!grant || !userPrefs) {
+      return [
+        { ok: null, label: "— GPA ma'lumotlari yuklanmoqda" },
+        { ok: null, label: "— IELTS ma'lumotlari yuklanmoqda" },
+        { ok: null, label: "— Daraja mosligi tekshirilmoqda" },
+        { ok: null, label: "— Davlat mosligi tekshirilmoqda" },
+      ];
+    }
+
+    const checks = [];
+
+    // GPA check
+    if (typeof grant.minGPA === "number" && typeof userPrefs.gpa === "number") {
+      checks.push({
+        ok: userPrefs.gpa >= grant.minGPA,
+        label: userPrefs.gpa >= grant.minGPA
+          ? `✓ GPA yetarli (${userPrefs.gpa} ≥ ${grant.minGPA})`
+          : `✗ GPA yetarli emas (${userPrefs.gpa} < ${grant.minGPA})`,
+      });
+    } else {
+      checks.push({ ok: null, label: "— GPA talabi ko'rsatilmagan" });
+    }
+
+    // IELTS check
+    if (typeof grant.minIELTS === "number" && typeof userPrefs.ielts === "number" && !userPrefs.noIelts) {
+      checks.push({
+        ok: userPrefs.ielts >= grant.minIELTS,
+        label: userPrefs.ielts >= grant.minIELTS
+          ? `✓ IELTS yetarli (${userPrefs.ielts} ≥ ${grant.minIELTS})`
+          : `✗ IELTS yetarli emas (${userPrefs.ielts} < ${grant.minIELTS})`,
+      });
+    } else if (userPrefs.noIelts) {
+      checks.push({ ok: false, label: "✗ IELTS hali topshirilmagan" });
+    } else {
+      checks.push({ ok: null, label: "— IELTS talabi ko'rsatilmagan" });
+    }
+
+    // Degree check
+    const degreePref = String(userPrefs.degree || "").toLowerCase();
+    const grantDegrees = Array.isArray(grant.degree)
+      ? grant.degree.map((d) => String(d).toLowerCase())
+      : [];
+    if (degreePref && grantDegrees.length) {
+      const match = grantDegrees.includes(degreePref);
+      checks.push({
+        ok: match,
+        label: match
+          ? `✓ Daraja mos keladi`
+          : `✗ Daraja mos kelmaydi`,
+      });
+    } else {
+      checks.push({ ok: null, label: "— Daraja talabi ko'rsatilmagan" });
+    }
+
+    // Country check
+    if (Array.isArray(userPrefs.countries) && userPrefs.countries.length && grant.country) {
+      const match = userPrefs.countries.includes(grant.country);
+      checks.push({
+        ok: match,
+        label: match
+          ? `✓ Maqsad davlatga mos (${grant.country})`
+          : `✗ ${grant.country} maqsad davlatlaringizda yo'q`,
+      });
+    } else {
+      checks.push({ ok: null, label: "— Davlat mosligi aniqlanmadi" });
+    }
+
+    return checks;
+  }, [grant, userPrefs]);
 
   const description = grant?.description || "";
   const shortDesc =
@@ -309,7 +361,17 @@ export default function GrantDetail() {
           </div>
           <div className="flex-1 space-y-2">
             {matchChecks.map((c) => (
-              <div key={c.label} className="text-sm text-slate-200">
+              <div
+                key={c.label}
+                className={[
+                  "text-sm",
+                  c.ok === true
+                    ? "text-[#10B981]"
+                    : c.ok === false
+                      ? "text-[#EF4444]"
+                      : "text-slate-400",
+                ].join(" ")}
+              >
                 {c.label}
               </div>
             ))}
@@ -347,12 +409,29 @@ export default function GrantDetail() {
         <Button
           type="button"
           className="gap-2"
-          onClick={() => grant.sourceUrl && window.open(grant.sourceUrl, "_blank")}
+          onClick={() => {
+            if (grant?.sourceUrl) window.open(grant.sourceUrl, "_blank");
+          }}
         >
           Apply Now <ExternalLink size={16} />
         </Button>
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2 border-[#3D3DC4] text-[#3D3DC4] hover:bg-[#3D3DC4]/10"
+        onClick={() => setIsPlannerOpen(true)}
+      >
+        <Calendar size={18} />
+        Plan My Application
+      </Button>
+
+      <CalendarModal
+        grant={grant}
+        isOpen={isPlannerOpen}
+        onClose={() => setIsPlannerOpen(false)}
+      />
     </div>
   );
 }
-

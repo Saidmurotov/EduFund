@@ -188,7 +188,31 @@ export default function Roadmap() {
         })}
       </div>
 
-      <Button type="button" variant="outline" className="gap-2" disabled>
+      <Button
+        type="button"
+        variant="outline"
+        className="gap-2"
+        disabled={!steps.length}
+        onClick={() => {
+          const lines = [
+            `# Roadmap: ${grantTitle}`,
+            data?.totalMonths ? `Tayyorgarlik rejasi: ${data.totalMonths} oy` : "",
+            data?.summary || "",
+            "",
+            ...steps.map(
+              (s, i) =>
+                `## ${i + 1}. ${s.title || "Step"} (Month ${s.month || i + 1})\n${s.description || "-"}\nStatus: ${s.status || "upcoming"}\n`
+            ),
+          ];
+          const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `roadmap-${grantTitle.replace(/\s+/g, "_")}.txt`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+      >
         <Download size={16} /> Roadmapni yuklab olish
       </Button>
     </div>

@@ -17,21 +17,39 @@ function computeMatchPercent(prefs, grant) {
 
   let score = 0;
 
-  const degreePref = norm(p.degree);
-  if (degreePref && Array.isArray(g.degree) && g.degree.map(norm).includes(degreePref)) {
+  // Country match: +30%
+  if (Array.isArray(p.countries) && p.countries.length && p.countries.includes(g.country)) {
+    score += 30;
+  } else if (Array.isArray(p.targetCountries) && p.targetCountries.length && p.targetCountries.includes(g.country)) {
     score += 30;
   }
 
+  // Degree match: +25%
+  const degreePref = norm(p.degree);
+  if (degreePref && Array.isArray(g.degree) && g.degree.map(norm).includes(degreePref)) {
+    score += 25;
+  }
+
+  // Field match: +20%
+  const userFields = Array.isArray(p.fields) ? p.fields.map(norm) : [];
+  const grantFields = Array.isArray(g.field) ? g.field.map(norm) : [];
+  if (userFields.length && grantFields.length) {
+    const hasAllFields = grantFields.some((f) => f === "all fields");
+    const hasMatch = userFields.some((f) => grantFields.includes(f));
+    if (hasAllFields || hasMatch) score += 20;
+  } else if (userFields.length === 0 || grantFields.length === 0) {
+    // No field specified means no penalty
+    score += 10;
+  }
+
+  // GPA check: +15%
   if (typeof p.gpa === "number" && typeof g.minGPA === "number") {
-    if (p.gpa >= g.minGPA) score += 30;
+    if (p.gpa >= g.minGPA) score += 15;
   }
 
+  // IELTS check: +10%
   if (typeof p.ielts === "number" && typeof g.minIELTS === "number") {
-    if (p.ielts >= g.minIELTS) score += 20;
-  }
-
-  if (Array.isArray(p.countries) && p.countries.length && p.countries.includes(g.country)) {
-    score += 20;
+    if (p.ielts >= g.minIELTS) score += 10;
   }
 
   return Math.min(100, score);
@@ -61,7 +79,10 @@ export async function getAllGrants(req, res) {
     }
 
     if (types.length) {
-      grants = grants.filter((g) => types.includes(norm(g.fundingType)));
+      grants = grants.filter((g) => {
+        const gType = norm(g.type || g.fundingType);
+        return types.includes(gType);
+      });
     }
 
     if (typeof minTrust === "number" && !Number.isNaN(minTrust)) {
@@ -124,15 +145,27 @@ export async function getMatchedGrantsForUser(req, res) {
     }
 
     const prefs = userDoc.data()?.preferences || {};
+    const targetCountries = Array.isArray(prefs.targetCountries)
+      ? prefs.targetCountries
+      : Array.isArray(prefs.countries)
+        ? prefs.countries
+        : [];
 
     const snapshot = await db.collection(COLLECTION).get();
     const grants = snapshot.docs.map((doc) => {
       const data = doc.data();
       const matchPercent = computeMatchPercent(prefs, data);
-      return { id: doc.id, matchPercent, ...data };
+      const isPriority = targetCountries.includes(data.country);
+      return { id: doc.id, matchPercent, isPriority, ...data };
     });
 
-    const sorted = grants.sort((a, b) => b.matchPercent - a.matchPercent);
+    // Priority grants first, then by matchPercent
+    const sorted = grants.sort((a, b) => {
+      if (a.isPriority && !b.isPriority) return -1;
+      if (!a.isPriority && b.isPriority) return 1;
+      return b.matchPercent - a.matchPercent;
+    });
+
     return res.json(sorted);
   } catch (error) {
     console.error("[getMatchedGrantsForUser] Error:", error);

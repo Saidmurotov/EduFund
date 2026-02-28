@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Bookmark, Home, MessageCircle, Search, User } from "lucide-react";
+import { Calendar, Home, MessageCircle, Search, User } from "lucide-react";
 
 const tabs = [
   { to: "/dashboard", label: "Home", Icon: Home },
   { to: "/search", label: "Search", Icon: Search },
   { to: "/chat", label: "AI Chat", Icon: MessageCircle, primary: true },
-  { to: "/saved", label: "Saved", Icon: Bookmark },
+  { to: "/calendar", label: "Calendar", Icon: Calendar },
   { to: "/profile", label: "Profile", Icon: User },
 ];
 
@@ -21,7 +21,7 @@ export default function BottomNav() {
               [
                 "flex-1 flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
                 primary ? "relative -mt-4" : "",
-                isActive ? "text-[#2563EB]" : "text-[#64748B]",
+                isActive ? "text-[#3D3DC4]" : "text-[#64748B]",
               ].join(" ")
             }
           >
@@ -29,7 +29,7 @@ export default function BottomNav() {
               className={[
                 "flex items-center justify-center",
                 primary
-                  ? "h-12 w-12 rounded-full bg-[#2563EB] text-white shadow-lg shadow-[#2563EB]/40"
+                  ? "h-12 w-12 rounded-full bg-[#3D3DC4] text-white shadow-lg shadow-[#3D3DC4]/40"
                   : "h-10 w-10 rounded-full",
               ].join(" ")}
             >

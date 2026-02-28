@@ -13,6 +13,9 @@ import GrantDetail from "./pages/GrantDetail.jsx";
 import Roadmap from "./pages/Roadmap.jsx";
 import Saved from "./pages/Saved.jsx";
 import Profile from "./pages/Profile.jsx";
+import GrantCalendar from "./pages/GrantCalendar.jsx";
+import AdminStats from "./pages/AdminStats.jsx";
+import Premium from "./pages/Premium.jsx";
 
 export default function App() {
   return (
@@ -53,6 +56,30 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <GrantCalendar />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium"
+            element={
+              <ProtectedRoute>
+                <Premium />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/stats"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminStats />
               </ProtectedRoute>
             }
           />

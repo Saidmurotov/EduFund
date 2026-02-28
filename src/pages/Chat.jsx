@@ -69,11 +69,14 @@ export default function Chat() {
     setLimit(state);
   }, []);
 
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
   useEffect(() => {
     if (limitReached) {
-      toast?.showToast?.("Kunlik limit tugadi. Premium'ga o'ting", "warning");
+      toastRef.current?.showToast?.("Kunlik limit tugadi. Premium'ga o'ting", "warning");
     }
-  }, [limitReached, toast]);
+  }, [limitReached]);
 
   const send = async () => {
     const text = input.trim();

@@ -1,479 +1,304 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Card from "../components/ui/Card.jsx";
-import Button from "../components/ui/Button.jsx";
-import Badge from "../components/ui/Badge.jsx";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
-
-const COUNTRIES = [
-  "Germany",
-  "South Korea",
-  "USA",
-  "UK",
-  "Austria",
-  "Japan",
-  "China",
-  "France",
-  "Other",
-];
-
-const DEGREE_CHOICES = [
-  { label: "Bakalavr", value: "bachelor" },
-  { label: "Magistr", value: "master" },
-  { label: "PhD", value: "phd" },
-];
-
-function degreeLabel(value) {
-  return DEGREE_CHOICES.find((d) => d.value === value)?.label || value || "-";
-}
-
-function initials(name) {
-  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "U";
-  return (parts[0][0] + (parts[1]?.[0] || "")).toUpperCase();
-}
-
-function Chip({ active, children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-        active
-          ? "bg-[#2563EB] border-[#2563EB] text-white"
-          : "bg-[#0F172A] border-[#334155] text-slate-200 hover:border-slate-400",
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
+import { doc, getDoc, updateDoc, collection, getDocs, query, limit } from "firebase/firestore";
+import Card from "../components/ui/Card.jsx";
+import Button from "../components/ui/Button.jsx";
+import { useToast } from "../context/ToastContext.jsx";
+import {
+  GraduationCap, BookOpen, BarChart2, Globe, Goal,
+  Settings, LogOut, Edit3, ShieldCheck, ChevronRight,
+  CheckCircle2, Flame, Bookmark, Calendar
+} from "lucide-react";
+import { initials } from "../lib/utils.js";
+import { DEGREE_CHOICES } from "../lib/constants.js";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [userDoc, setUserDoc] = useState(null);
-  const [savedCount, setSavedCount] = useState(0);
-  const [viewedCount] = useState(0);
-
-  const [notifEnabled, setNotifEnabled] = useState(true);
-  const [language, setLanguage] = useState("uz");
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [edit, setEdit] = useState({
-    gpa: "",
-    ielts: "",
-    degree: "",
-    field: "",
-    countries: [],
-  });
-  const [saving, setSaving] = useState(false);
-
-  const isPremium = Boolean(userDoc?.isPremium);
-  const prefs = userDoc?.preferences || {};
+  const [pref, setPref] = useState(null);
+  const [stats, setStats] = useState({ saved: 0, viewed: 0, plans: 0 });
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
-    let alive = true;
     async function load() {
       if (!user?.uid) return;
-      setLoading(true);
-      setError("");
       try {
-        if (!db) throw new Error("Firebase not configured");
+        const uDoc = await getDoc(doc(db, "users", user.uid));
+        const p = uDoc.data()?.preferences || {};
+        setPref(p);
+        setEditForm(p);
 
-        const ref = doc(db, "users", user.uid);
-        const snap = await getDoc(ref);
-        const data = snap.exists() ? snap.data() : null;
+        // Stats
+        const savedSnap = await getDocs(collection(db, "savedGrants", user.uid, "items"));
+        const plansSnap = await getDocs(collection(db, "userCalendars", user.uid, "plans"));
 
-        const savedSnap = await getDocs(
-          collection(db, "savedGrants", user.uid, "items")
-        );
-
-        if (!alive) return;
-        setUserDoc(data);
-        setSavedCount(savedSnap.size || 0);
+        setStats({
+          saved: savedSnap.size,
+          plans: plansSnap.size,
+          viewed: uDoc.data()?.viewedCount || 0
+        });
       } catch (e) {
         console.error(e);
-        if (!alive) return;
-        setError("Profil ma'lumotlarini olishda xato yuz berdi.");
       } finally {
-        if (alive) setLoading(false);
+        setLoading(false);
       }
     }
     load();
-    return () => {
-      alive = false;
-    };
   }, [user?.uid]);
 
-  const displayName = userDoc?.name || user?.name || user?.email || "User";
-  const email = userDoc?.email || user?.email || "";
-
-  const openEdit = () => {
-    setEdit({
-      gpa: prefs.gpa ?? "",
-      ielts: prefs.ielts ?? "",
-      degree: prefs.degree ?? "",
-      field: prefs.field ?? "",
-      countries: Array.isArray(prefs.countries) ? prefs.countries : [],
-    });
-    setIsModalOpen(true);
-  };
-
-  const toggleCountry = (c) => {
-    setEdit((p) => ({
-      ...p,
-      countries: p.countries.includes(c)
-        ? p.countries.filter((x) => x !== c)
-        : [...p.countries, c],
-    }));
-  };
-
-  const savePreferences = async () => {
+  const handleSave = async () => {
     if (!user?.uid) return;
-    if (!db) {
-      setError("Firebase sozlanmagan. `.env` ni to'ldiring.");
-      return;
-    }
-    setSaving(true);
-    setError("");
     try {
-      const ref = doc(db, "users", user.uid);
-      await setDoc(
-        ref,
-        {
-          preferences: {
-            ...prefs,
-            gpa: edit.gpa === "" ? null : Number(edit.gpa),
-            ielts: edit.ielts === "" ? null : Number(edit.ielts),
-            degree: edit.degree,
-            field: edit.field,
-            countries: edit.countries,
-          },
-        },
-        { merge: true }
-      );
-      const snap = await getDoc(ref);
-      setUserDoc(snap.exists() ? snap.data() : userDoc);
-      setIsModalOpen(false);
+      await updateDoc(doc(db, "users", user.uid), {
+        preferences: editForm
+      });
+      setPref(editForm);
+      setIsEditOpen(false);
+      toast?.showToast?.("Profil muvaffaqiyatli saqlandi!", "success");
     } catch (e) {
       console.error(e);
-      setError("Saqlashda xato yuz berdi.");
-    } finally {
-      setSaving(false);
+      toast?.showToast?.("Saqlashda xato yuz berdi.", "error");
     }
   };
 
-  const premiumBenefits = useMemo(
-    () => ["Cheksiz AI chat", "To'liq Roadmap", "CV tekshirish"],
-    []
-  );
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="py-8 space-y-3">
-        <div className="h-28 rounded-2xl bg-[#1E293B] border border-[#334155] animate-pulse" />
-        <div className="h-44 rounded-2xl bg-[#1E293B] border border-[#334155] animate-pulse" />
+      <div className="py-20 flex flex-col items-center justify-center gap-4">
+        <div className="h-10 w-10 rounded-full border-4 border-slate-700 border-t-[#3D3DC4] animate-spin" />
+        <p className="text-slate-400">Profilingiz yuklanmoqda...</p>
       </div>
     );
   }
 
+  const isPremium = user?.isPremium || false;
+
   return (
-    <div className="py-6 space-y-4">
-      {error && (
-        <div className="text-sm text-[#EF4444] bg-[#1E293B] border border-[#EF4444]/40 rounded-lg px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-[#2563EB]/20 border border-[#2563EB]/40 flex items-center justify-center text-[#2563EB] font-bold text-xl">
-            {initials(displayName)}
+    <div className="py-6 space-y-6 pb-20">
+      {/* Header Profile */}
+      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#3D3DC4] to-[#1E1E7A] p-6 shadow-xl shadow-[#3D3DC4]/20">
+        <div className="relative z-10 flex items-center gap-5">
+          <div className="h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
+            {initials(pref?.name || user?.email)}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="text-lg font-semibold text-slate-50 truncate">
-                {displayName}
-              </div>
-              {isPremium && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/30">
-                  Premium
-                </span>
-              )}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-white truncate">{pref?.name || "Talaba"}</h1>
+              {isPremium && <div className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"><ShieldCheck size={10} /> Premium</div>}
             </div>
-            <div className="text-sm text-slate-300 truncate">{email}</div>
-          </div>
-          <Button type="button" onClick={openEdit}>
-            Edit Profile
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-        <div className="flex items-center justify-between">
-          <div className="text-lg font-semibold text-slate-50">
-            Akademik ma'lumotlar
-          </div>
-          <Button type="button" variant="ghost" onClick={openEdit}>
-            Tahrirlash
-          </Button>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-slate-400">GPA</span>
-            <span className="text-slate-100 font-medium">{prefs.gpa ?? "-"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">IELTS</span>
-            <span className="text-slate-100 font-medium">
-              {prefs.noIelts ? "Hali yo'q" : prefs.ielts ?? "-"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Daraja</span>
-            <span className="text-slate-100 font-medium">
-              {degreeLabel(prefs.degree)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Soha</span>
-            <span className="text-slate-100 font-medium">{prefs.field ?? "-"}</span>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="text-sm text-slate-400 mb-2">Maqsad davlatlar</div>
-          <div className="flex flex-wrap gap-2">
-            {(Array.isArray(prefs.countries) && prefs.countries.length
-              ? prefs.countries
-              : ["-"]
-            ).map((c) => (
-              <Badge key={c} variant="outline">
-                {c}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-        <div className="text-lg font-semibold text-slate-50">Statistika</div>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl bg-[#0F172A] border border-[#334155] p-3">
-            <div className="text-xs text-slate-400 font-semibold">
-              Saqlangan grantlar
-            </div>
-            <div className="text-xl font-bold text-slate-50 mt-1">{savedCount}</div>
-          </div>
-          <div className="rounded-xl bg-[#0F172A] border border-[#334155] p-3">
-            <div className="text-xs text-slate-400 font-semibold">
-              Ko'rilgan grantlar
-            </div>
-            <div className="text-xl font-bold text-slate-50 mt-1">{viewedCount}</div>
-          </div>
-          <div className="rounded-xl bg-[#0F172A] border border-[#334155] p-3">
-            <div className="text-xs text-slate-400 font-semibold">
-              Yuborilgan arizalar
-            </div>
-            <div className="text-xl font-bold text-slate-50 mt-1">0</div>
-          </div>
-        </div>
-      </Card>
-
-      {!isPremium && (
-        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-          <div className="text-lg font-semibold text-slate-50">
-            🚀 Premium ga o'ting
-          </div>
-          <ul className="mt-3 space-y-1 text-sm text-slate-200">
-            {premiumBenefits.map((b) => (
-              <li key={b}>- {b}</li>
-            ))}
-          </ul>
-          <div className="mt-4">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => alert("Hozircha to'lov integratsiyasi yo'q.")}
+            <p className="text-white/60 text-sm truncate">{user?.email}</p>
+            <button
+              onClick={() => setIsEditOpen(true)}
+              className="mt-2 text-xs font-bold text-white/80 hover:text-white uppercase tracking-widest flex items-center gap-1.5"
             >
-              29,000 so'm/oy — Obuna bo'lish
-            </Button>
+              <Edit3 size={12} /> Profilni tahrirlash
+            </button>
           </div>
+        </div>
+        {/* Abstract background shapes */}
+        <div className="absolute -right-4 -top-4 h-32 w-32 bg-white/5 rounded-full blur-2xl" />
+        <div className="absolute right-12 bottom-0 h-20 w-20 bg-white/10 rounded-full blur-xl" />
+      </div>
+
+      {/* Academic Info */}
+      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-slate-50 flex items-center gap-2">
+            <GraduationCap size={20} className="text-[#3D3DC4]" /> Akademik Ma'lumotlar
+          </h2>
+          <Edit3 size={16} className="text-slate-600 cursor-pointer" onClick={() => setIsEditOpen(true)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+          <ProfileField label="Daraja" value={pref?.degree ? DEGREE_CHOICES.find(d => d.value === pref.degree)?.label : "—"} Icon={BookOpen} color="text-blue-400" />
+          <ProfileField label="GPA" value={pref?.gpa ? `${pref.gpa} (${pref.gpaSystem})` : "—"} Icon={BarChart2} color="text-teal-400" />
+          <ProfileField label="IELTS / TOEFL" value={pref?.ielts ? `${pref.ielts} (IELTS)` : pref?.toefl ? `${pref.toefl} (TOEFL)` : "—"} Icon={Globe} color="text-indigo-400" />
+          <ProfileField label="SAT / GRE" value={pref?.sat ? `${pref.sat} (SAT)` : "—"} Icon={Goal} color="text-rose-400" />
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-[#334155]/50">
+          <div className="text-[10px] uppercase font-bold text-slate-500 mb-3 tracking-widest">Maqsad davlatlar</div>
+          <div className="flex flex-wrap gap-2">
+            {pref?.targetCountries?.length ? pref.targetCountries.map(c => (
+              <span key={c} className="px-3 py-1 rounded-full bg-[#0F172A] border border-[#334155] text-xs text-slate-300 font-medium">
+                {c}
+              </span>
+            )) : <span className="text-xs text-slate-500 italic">Hali tanlanmagan</span>}
+          </div>
+        </div>
+      </Card>
+
+      {/* Goals & Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Goal size={16} className="text-[#3D3DC4]" /> Maqsadlar
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {pref?.goals?.length ? pref.goals.map(g => (
+              <div key={g} className="px-3 py-2 rounded-xl bg-[#3D3DC4]/10 text-[#3D3DC4] text-xs font-bold capitalize">
+                {g.replace('_', ' ')}
+              </div>
+            )) : <span className="text-xs text-slate-500 italic">Hali ko'rsatilmagan</span>}
+          </div>
+        </Card>
+
+        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <BarChart2 size={16} className="text-emerald-500" /> Statistika
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <StatItem label="Saqlangan" value={stats.saved} Icon={Bookmark} color="text-emerald-400" />
+            <StatItem label="Rejalar" value={stats.plans} Icon={Calendar} color="text-blue-400" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Premium Promo */}
+      {!isPremium && (
+        <Card className="bg-gradient-to-r from-[#3D3DC4] to-[#6366F1] border-none rounded-[24px] p-6 text-white overflow-hidden relative group cursor-pointer" onClick={() => navigate('/premium')}>
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Flame size={20} className="text-amber-300 fill-amber-300" /> Premium'ga o'ting
+              </h2>
+              <p className="text-white/80 text-xs">Cheksiz AI maslahat, 12-oillik Roadmap va boshqa imkoniyatlar.</p>
+            </div>
+            <ChevronRight size={24} className="text-white/40 group-hover:text-white transition-all transform group-hover:translate-x-1" />
+          </div>
+          {/* Glow effect */}
+          <div className="absolute top-0 right-0 h-full w-1/3 bg-white/10 skew-x-[-20deg] blur-lg" />
         </Card>
       )}
 
-      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-        <div className="text-lg font-semibold text-slate-50">Sozlamalar</div>
-
-        <div className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-slate-200">Bildirishnomalar</div>
-            <button
-              type="button"
-              onClick={() => setNotifEnabled((p) => !p)}
-              className={[
-                "w-12 h-7 rounded-full border transition-colors relative",
-                notifEnabled
-                  ? "bg-[#2563EB] border-[#2563EB]"
-                  : "bg-[#0F172A] border-[#334155]",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "absolute top-1 h-5 w-5 rounded-full bg-white transition-transform",
-                  notifEnabled ? "translate-x-6" : "translate-x-1",
-                ].join(" ")}
-              />
-            </button>
+      {/* Logout & Settings */}
+      <div className="space-y-3 pt-4">
+        <button className="w-full p-4 rounded-xl bg-[#1E293B] border border-[#334155] flex items-center justify-between group transition-colors hover:border-[#3D3DC4]/50">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-[#0F172A] flex items-center justify-center text-slate-500 group-hover:text-[#3D3DC4]">
+              <Settings size={18} />
+            </div>
+            <span className="text-sm font-bold text-slate-300">Sozlamalar</span>
           </div>
+          <ChevronRight size={16} className="text-slate-600" />
+        </button>
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm text-slate-200">Til</div>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-            >
-              <option value="uz">O'zbek</option>
-              <option value="ru">Rus</option>
-              <option value="en">English</option>
-            </select>
-          </div>
+        <button
+          onClick={handleLogout}
+          className="w-full p-4 rounded-xl bg-rose-500/5 border border-rose-500/10 flex items-center justify-center gap-2 group transition-all hover:bg-rose-500/10"
+        >
+          <LogOut size={18} className="text-rose-500" />
+          <span className="text-sm font-bold text-rose-500">Hisobdan chiqish</span>
+        </button>
+      </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={async () => {
-              await logout();
-              navigate("/login");
-            }}
-          >
-            Hisobdan chiqish
-          </Button>
-        </div>
-      </Card>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-[#0F172A] border border-[#334155] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-lg font-semibold text-slate-50">
-                Profilni tahrirlash
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsModalOpen(false)}
-              >
-                Yopish
-              </Button>
+      {/* Edit Modal */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <Card className="bg-[#1E293B] border-[#334155] rounded-2xl w-full max-w-lg p-6 flex flex-col gap-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-50">Profilni tahrirlash</h2>
+              <button onClick={() => setIsEditOpen(false)} className="text-slate-400 hover:text-white"><X size={20} /></button>
             </div>
 
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200">GPA</label>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Ism</label>
+                <input
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(p => ({ ...p, name: e.target.value }))}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase">GPA</label>
                   <input
-                    value={edit.gpa}
-                    onChange={(e) =>
-                      setEdit((p) => ({ ...p, gpa: e.target.value }))
-                    }
                     type="number"
-                    min={0}
-                    max={4}
-                    step={0.1}
-                    className="w-full rounded-lg bg-[#1E293B] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                    className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
+                    value={editForm.gpa}
+                    onChange={(e) => setEditForm(p => ({ ...p, gpa: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200">IELTS</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase">IELTS</label>
                   <input
-                    value={edit.ielts}
-                    onChange={(e) =>
-                      setEdit((p) => ({ ...p, ielts: e.target.value }))
-                    }
                     type="number"
-                    min={0}
-                    max={9}
-                    step={0.5}
-                    className="w-full rounded-lg bg-[#1E293B] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                    step="0.5"
+                    className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
+                    value={editForm.ielts}
+                    onChange={(e) => setEditForm(p => ({ ...p, ielts: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200">Daraja</label>
-                  <select
-                    value={edit.degree}
-                    onChange={(e) =>
-                      setEdit((p) => ({ ...p, degree: e.target.value }))
-                    }
-                    className="w-full rounded-lg bg-[#1E293B] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                  >
-                    <option value="">Tanlang</option>
-                    {DEGREE_CHOICES.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-200">Soha</label>
-                  <input
-                    value={edit.field}
-                    onChange={(e) =>
-                      setEdit((p) => ({ ...p, field: e.target.value }))
-                    }
-                    className="w-full rounded-lg bg-[#1E293B] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                    placeholder="Masalan: Computer Science"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="text-sm text-slate-200 mb-2">Davlatlar</div>
-                <div className="flex flex-wrap gap-2">
-                  {COUNTRIES.map((c) => (
-                    <Chip
-                      key={c}
-                      active={edit.countries.includes(c)}
-                      onClick={() => toggleCountry(c)}
-                    >
-                      {c}
-                    </Chip>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModalOpen(false)}
-                  disabled={saving}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Daraja</label>
+                <select
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4] appearance-none"
+                  value={editForm.degree}
+                  onChange={(e) => setEditForm(p => ({ ...p, degree: e.target.value }))}
                 >
-                  Bekor qilish
-                </Button>
-                <Button type="button" onClick={savePreferences} disabled={saving}>
-                  {saving ? "Saqlanmoqda..." : "Saqlash"}
-                </Button>
+                  {DEGREE_CHOICES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
               </div>
             </div>
-          </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setIsEditOpen(false)}>Bekor qilish</Button>
+              <Button className="flex-1" onClick={handleSave}>Saqlash</Button>
+            </div>
+          </Card>
         </div>
       )}
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      `}</style>
     </div>
   );
 }
 
+function ProfileField({ label, value, Icon, color }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className={`mt-0.5 ${color}`}>
+        <Icon size={16} />
+      </div>
+      <div>
+        <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{label}</div>
+        <div className="text-sm font-bold text-slate-300">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function StatItem({ label, value, Icon, color }) {
+  return (
+    <div className="bg-[#0F172A] border border-[#334155]/50 rounded-xl p-3 flex items-center gap-3">
+      <div className={`${color} shrink-0`}>
+        <Icon size={16} />
+      </div>
+      <div>
+        <div className="text-[9px] text-slate-500 uppercase font-bold">{label}</div>
+        <div className="text-sm font-extrabold text-slate-200">{value}</div>
+      </div>
+    </div>
+  );
+}

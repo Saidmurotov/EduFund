@@ -4,13 +4,17 @@ import Card from "../ui/Card.jsx";
 import Badge from "../ui/Badge.jsx";
 import Button from "../ui/Button.jsx";
 import { ExternalLink } from "lucide-react";
+import { daysUntil } from "../../lib/utils.js";
 
-function daysUntil(dateString) {
-  if (!dateString) return null;
-  const d = new Date(dateString);
-  if (Number.isNaN(d.getTime())) return null;
-  const ms = d.getTime() - Date.now();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+function typeBadge(type, fundingType) {
+  const t = String(type || fundingType || "").toLowerCase();
+  const map = {
+    conference: { label: "🏆 Conference", cls: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40" },
+    research: { label: "🔬 Research", cls: "bg-teal-600/20 text-teal-300 border border-teal-500/40" },
+    stajirovka: { label: "📋 Stajirovka", cls: "bg-orange-500/20 text-orange-300 border border-orange-500/40" },
+    language_program: { label: "🌐 Language", cls: "bg-violet-500/20 text-violet-300 border border-violet-500/40" },
+  };
+  return map[t] || null;
 }
 
 export default function GrantCard({ grant, matchPercent }) {
@@ -26,6 +30,8 @@ export default function GrantCard({ grant, matchPercent }) {
   const urgent =
     typeof deadlineDays === "number" && deadlineDays >= 0 && deadlineDays < 3;
 
+  const extraBadge = typeBadge(grant?.type, grant?.fundingType);
+
   return (
     <Card
       className="bg-[#1E293B] border-[#334155] rounded-2xl p-4 cursor-pointer hover:border-slate-400 transition-colors"
@@ -40,13 +46,26 @@ export default function GrantCard({ grant, matchPercent }) {
             {grant?.country || "-"} • {grant?.organization || "-"}
           </div>
         </div>
-        <div className="text-sm font-semibold text-[#10B981] whitespace-nowrap">
-          {mp ?? 0}% match
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <div className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] text-[11px] font-bold border border-[#10B981]/20">
+            {mp ?? 0}% Match
+          </div>
+          {grant?.isPriority && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
+              🎯 Priority
+            </span>
+          )}
         </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {grant?.fundingType && <Badge variant="green">{grant.fundingType}</Badge>}
+        {extraBadge ? (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${extraBadge.cls}`}>
+            {extraBadge.label}
+          </span>
+        ) : (
+          grant?.fundingType && <Badge variant="green">{grant.fundingType}</Badge>
+        )}
         {grant?.degree && (
           <Badge variant="blue">
             {Array.isArray(grant.degree) ? grant.degree.join(", ") : grant.degree}
@@ -88,4 +107,3 @@ export default function GrantCard({ grant, matchPercent }) {
     </Card>
   );
 }
-

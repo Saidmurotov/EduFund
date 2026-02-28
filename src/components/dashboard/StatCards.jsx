@@ -1,5 +1,11 @@
+import { useEffect, useState } from "react";
 import Card from "../ui/Card.jsx";
 import { Bookmark, Calendar } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth.js";
+import { db } from "../../lib/firebase.js";
+import { collection, getDocs } from "firebase/firestore";
+import { daysUntil } from "../../lib/utils.js";
+import { api, withAuth } from "../../lib/api.js";
 
 function StatCard({ title, value, Icon }) {
   return (
@@ -20,11 +26,58 @@ function StatCard({ title, value, Icon }) {
 }
 
 export default function StatCards() {
+  const { user, getIdToken } = useAuth();
+  const [savedCount, setSavedCount] = useState(0);
+  const [deadlineCount, setDeadlineCount] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      if (!user?.uid) return;
+
+      try {
+        // Count saved grants
+        if (db) {
+          const savedSnap = await getDocs(
+            collection(db, "savedGrants", user.uid, "items")
+          );
+          if (!alive) return;
+          setSavedCount(savedSnap.size || 0);
+        }
+
+        // Count upcoming deadlines (this week)
+        const headers = await withAuth(getIdToken);
+        const res = await api.get(`/grants/match/${user.uid}`, { headers });
+        if (!alive) return;
+        const grants = Array.isArray(res.data) ? res.data : [];
+        const upcoming = grants.filter((g) => {
+          const days = daysUntil(g.deadline);
+          return typeof days === "number" && days >= 0 && days <= 7;
+        });
+        setDeadlineCount(upcoming.length);
+      } catch (e) {
+        console.error("[StatCards] load error:", e);
+      }
+    }
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, [user?.uid, getIdToken]);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <StatCard title="SAVED" value="4 grants" Icon={Bookmark} />
-      <StatCard title="DEADLINES" value="2 this week" Icon={Calendar} />
+      <StatCard
+        title="SAQLANGAN"
+        value={`${savedCount} ta grant`}
+        Icon={Bookmark}
+      />
+      <StatCard
+        title="DEADLINELAR"
+        value={`${deadlineCount} ta shu hafta`}
+        Icon={Calendar}
+      />
     </div>
   );
 }
-

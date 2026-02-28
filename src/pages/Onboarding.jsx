@@ -1,45 +1,103 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
-import Card from "../components/ui/Card.jsx";
-import Button from "../components/ui/Button.jsx";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
+import {
+  GraduationCap,
+  Briefcase,
+  Globe,
+  Users,
+  Award,
+  Microscope,
+  ClipboardList,
+  ArrowRightLeft,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+} from "lucide-react";
 
-const YEARS = Array.from({ length: 2010 - 1990 + 1 }, (_, i) => 1990 + i);
-const COUNTRIES = [
-  "Germany",
-  "South Korea",
-  "USA",
-  "UK",
-  "Austria",
-  "Japan",
-  "China",
-  "France",
-  "Other",
+/* ─── Constants ─── */
+
+const REGIONS = [
+  "Toshkent shahri",
+  "Toshkent viloyati",
+  "Andijon",
+  "Buxoro",
+  "Farg'ona",
+  "Jizzax",
+  "Qashqadaryo",
+  "Xorazm",
+  "Namangan",
+  "Navoiy",
+  "Samarqand",
+  "Sirdaryo",
+  "Surxondaryo",
+  "Qoraqalpog'iston",
+  "Xorijda yashayman",
 ];
-const GRANT_TYPES = ["Full Fund", "Partial", "Internship", "Exchange"];
 
-const DEGREE_CHOICES = [
-  { label: "Bakalavr", value: "bachelor" },
-  { label: "Magistr", value: "master" },
+const EDUCATION_LEVELS = [
+  { label: "High School", value: "high_school" },
+  { label: "Bachelor", value: "bachelor" },
+  { label: "Master", value: "master" },
   { label: "PhD", value: "phd" },
 ];
 
-function degreeLabel(value) {
-  return DEGREE_CHOICES.find((d) => d.value === value)?.label || value || "-";
-}
+const FIELDS = [
+  "IT & CS",
+  "Business",
+  "Engineering",
+  "Medical",
+  "Arts",
+  "Law",
+  "Economics",
+  "Education",
+  "Other",
+];
 
-function Chip({ active, children, onClick }) {
+const LANG_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+const LANG_TYPES = ["Ingliz", "Nemis", "Koreys", "Fransuz", "Boshqa"];
+
+const GOALS = [
+  { value: "full_grant", label: "Full Grant", Icon: GraduationCap },
+  { value: "internship", label: "Internship", Icon: Briefcase },
+  { value: "language", label: "Learn Language", Icon: Globe },
+  { value: "networking", label: "Networking", Icon: Users },
+  { value: "conference", label: "Conference", Icon: Award },
+  { value: "research", label: "Research", Icon: Microscope },
+  { value: "stajirovka", label: "Stajirovka", Icon: ClipboardList },
+  { value: "exchange", label: "Exchange Program", Icon: ArrowRightLeft },
+];
+
+const TARGET_COUNTRIES = [
+  { name: "USA", flag: "🇺🇸" },
+  { name: "Germany", flag: "🇩🇪" },
+  { name: "UK", flag: "🇬🇧" },
+  { name: "South Korea", flag: "🇰🇷" },
+  { name: "Turkey", flag: "🇹🇷" },
+  { name: "China", flag: "🇨🇳" },
+  { name: "Japan", flag: "🇯🇵" },
+  { name: "France", flag: "🇫🇷" },
+  { name: "Austria", flag: "🇦🇹" },
+  { name: "Canada", flag: "🇨🇦" },
+  { name: "Australia", flag: "🇦🇺" },
+  { name: "Other", flag: "🌍" },
+];
+
+/* ─── Tiny shared UI ─── */
+
+function Pill({ active, children, onClick, className = "" }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+        "px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all duration-200",
         active
-          ? "bg-[#2563EB] border-[#2563EB] text-white"
-          : "bg-[#1E293B] border-[#334155] text-slate-200 hover:border-slate-400",
+          ? "border-[#3D3DC4] bg-[#3D3DC4]/8 text-[#3D3DC4]"
+          : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]",
+        className,
       ].join(" ")}
     >
       {children}
@@ -47,47 +105,101 @@ function Chip({ active, children, onClick }) {
   );
 }
 
-function StepShell({ title, subtitle, children }) {
+function InputField({ label, children }) {
   return (
-    <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
-      <div className="mb-5">
-        <h2 className="text-xl font-semibold text-slate-50">{title}</h2>
-        {subtitle && <p className="text-sm text-slate-400 mt-1">{subtitle}</p>}
-      </div>
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-[#374151]">{label}</label>
       {children}
-    </Card>
+    </div>
   );
 }
+
+const inputClass =
+  "w-full rounded-xl bg-white border-2 border-[#E5E7EB] px-4 py-3 text-sm text-[#1A1A2E] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#3D3DC4] focus:ring-2 focus:ring-[#3D3DC4]/20 transition-all";
+
+/* ─── Step Indicator ─── */
+
+function StepIndicator({ current, total }) {
+  return (
+    <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center gap-3">
+        {Array.from({ length: total }, (_, i) => {
+          const step = i + 1;
+          const done = step < current;
+          const active = step === current;
+          return (
+            <div key={step} className="flex items-center gap-2">
+              <div
+                className={[
+                  "h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300",
+                  done
+                    ? "bg-[#3D3DC4] text-white"
+                    : active
+                      ? "border-2 border-[#3D3DC4] text-[#3D3DC4] bg-white"
+                      : "bg-[#E5E7EB] text-[#9CA3AF]",
+                ].join(" ")}
+              >
+                {done ? <Check size={16} strokeWidth={3} /> : step}
+              </div>
+              {step < total && (
+                <div
+                  className={[
+                    "w-8 h-0.5 rounded-full transition-colors",
+                    done ? "bg-[#3D3DC4]" : "bg-[#E5E7EB]",
+                  ].join(" ")}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-xs font-medium text-[#6B7280]">
+        🌐 EN
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main ─── */
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [step, setStep] = useState(1);
   const [animKey, setAnimKey] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    birthYear: "",
+  const [form, setForm] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    region: "",
     degree: "",
-    field: "",
-    gpa: 3.0,
-    ielts: 6.5,
+    fields: [],
+    gpa: "",
+    gpaSystem: "4.0",
+    ielts: "",
     noIelts: false,
-    countries: [],
-    grantTypes: [],
+    toefl: "",
+    noToefl: false,
+    sat: "",
+    noSat: false,
+    gre: "",
+    noGre: false,
+    gmat: "",
+    noGmat: false,
+    languageLevel: "",
+    languageType: "",
+    goals: [],
+    targetCountries: [],
   });
 
-  const progress = useMemo(() => Math.round(((currentStep - 1) / 4) * 100), [
-    currentStep,
-  ]);
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-  const setField = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
-
-  const toggleInArray = (k, value) => {
-    setFormData((p) => {
+  const toggleArr = (k, value) => {
+    setForm((p) => {
       const arr = new Set(p[k]);
       if (arr.has(value)) arr.delete(value);
       else arr.add(value);
@@ -98,42 +210,54 @@ export default function Onboarding() {
   const next = () => {
     setError("");
     setAnimKey((k) => k + 1);
-    setCurrentStep((s) => Math.min(5, s + 1));
+    setStep((s) => Math.min(4, s + 1));
   };
-
   const back = () => {
     setError("");
     setAnimKey((k) => k + 1);
-    setCurrentStep((s) => Math.max(1, s - 1));
+    setStep((s) => Math.max(1, s - 1));
   };
 
-  const start = async () => {
+  const finish = async () => {
     setError("");
     if (!user?.uid) {
       setError("Avval login qiling.");
       return;
     }
     if (!db) {
-      setError("Firebase sozlanmagan. `.env` ni to'ldiring.");
+      setError("Firebase sozlanmagan.");
       return;
     }
 
     setSaving(true);
     try {
-      const userRef = doc(db, "users", user.uid);
+      const ref = doc(db, "users", user.uid);
       await setDoc(
-        userRef,
+        ref,
         {
           preferences: {
-            fullName: formData.fullName,
-            birthYear: formData.birthYear ? Number(formData.birthYear) : null,
-            degree: formData.degree, // canonical: bachelor|master|phd
-            field: formData.field,
-            gpa: Number(formData.gpa),
-            ielts: formData.noIelts ? null : Number(formData.ielts),
-            noIelts: Boolean(formData.noIelts),
-            countries: formData.countries,
-            grantTypes: formData.grantTypes,
+            name: form.name,
+            age: form.age ? Number(form.age) : null,
+            gender: form.gender,
+            region: form.region,
+            degree: form.degree,
+            fields: form.fields,
+            gpa: form.gpa ? Number(form.gpa) : null,
+            gpaSystem: form.gpaSystem,
+            ielts: form.noIelts ? null : form.ielts ? Number(form.ielts) : null,
+            noIelts: form.noIelts,
+            toefl: form.noToefl ? null : form.toefl ? Number(form.toefl) : null,
+            noToefl: form.noToefl,
+            sat: form.noSat ? null : form.sat ? Number(form.sat) : null,
+            noSat: form.noSat,
+            gre: form.noGre ? null : form.gre ? Number(form.gre) : null,
+            noGre: form.noGre,
+            gmat: form.noGmat ? null : form.gmat ? Number(form.gmat) : null,
+            noGmat: form.noGmat,
+            languageLevel: form.languageLevel,
+            languageType: form.languageType,
+            goals: form.goals,
+            targetCountries: form.targetCountries,
           },
         },
         { merge: true }
@@ -147,289 +271,402 @@ export default function Onboarding() {
     }
   };
 
-  const stepContent = () => {
-    if (currentStep === 1) {
-      return (
-        <StepShell
-          title="Shaxsiy ma'lumot"
-          subtitle="Asosiy ma'lumotlaringizni kiriting."
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm text-slate-200">To'liq ism</label>
-              <input
-                className="w-full rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                value={formData.fullName}
-                onChange={(e) => setField("fullName", e.target.value)}
-                placeholder="Ism Familiya"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-slate-200">Tug'ilgan yil</label>
-              <select
-                className="w-full rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                value={formData.birthYear}
-                onChange={(e) => setField("birthYear", e.target.value)}
+  /* ─── STEP 1: Personal Info ─── */
+  const Step1 = () => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+      <h2 className="text-xl font-bold text-[#1A1A2E]">Personal Info</h2>
+      <p className="text-sm text-[#9CA3AF] mt-1">Shaxsiy ma'lumotlaringizni kiriting</p>
+
+      <div className="mt-6 space-y-5">
+        <InputField label="To'liq ism">
+          <input
+            className={inputClass}
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="Ism Familiya"
+          />
+        </InputField>
+
+        <InputField label="Yosh">
+          <input
+            className={inputClass}
+            type="number"
+            min={14}
+            max={60}
+            value={form.age}
+            onChange={(e) => set("age", e.target.value)}
+            placeholder="Yoshingiz (14-60)"
+          />
+        </InputField>
+
+        <InputField label="Jinsi">
+          <div className="flex gap-3">
+            <Pill
+              active={form.gender === "male"}
+              onClick={() => set("gender", "male")}
+              className="flex-1"
+            >
+              Erkak
+            </Pill>
+            <Pill
+              active={form.gender === "female"}
+              onClick={() => set("gender", "female")}
+              className="flex-1"
+            >
+              Ayol
+            </Pill>
+          </div>
+        </InputField>
+
+        <InputField label="Viloyat">
+          <select
+            className={inputClass}
+            value={form.region}
+            onChange={(e) => set("region", e.target.value)}
+          >
+            <option value="">Tanlang</option>
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </InputField>
+      </div>
+    </div>
+  );
+
+  /* ─── STEP 2: Education & Field ─── */
+  const Step2 = () => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+      <h2 className="text-xl font-bold text-[#1A1A2E]">Education & Field</h2>
+      <p className="text-sm text-[#9CA3AF] mt-1">Ta'lim darajangiz va yo'nalishingiz</p>
+
+      <div className="mt-6 space-y-6">
+        <div>
+          <div className="text-sm font-medium text-[#374151] mb-3">Education Level</div>
+          <div className="grid grid-cols-2 gap-3">
+            {EDUCATION_LEVELS.map((d) => (
+              <Pill
+                key={d.value}
+                active={form.degree === d.value}
+                onClick={() => set("degree", d.value)}
               >
-                <option value="">Tanlang</option>
-                {YEARS.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </StepShell>
-      );
-    }
-
-    if (currentStep === 2) {
-      return (
-        <StepShell title="Ta'lim darajasi" subtitle="Hozirgi darajangizni tanlang.">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {DEGREE_CHOICES.map((d) => {
-                const selected = formData.degree === d.value;
-                return (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => setField("degree", d.value)}
-                    className={[
-                      "text-left rounded-2xl border p-4 transition-colors",
-                      selected
-                        ? "border-[#2563EB] bg-[#2563EB]/10"
-                        : "border-[#334155] bg-[#1E293B] hover:border-slate-400",
-                    ].join(" ")}
-                  >
-                    <div className="text-slate-50 font-semibold">{d.label}</div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Tanlash uchun bosing
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm text-slate-200">Ixtisoslik</label>
-              <input
-                className="w-full rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                value={formData.field}
-                onChange={(e) => setField("field", e.target.value)}
-                placeholder='Masalan: "Computer Science"'
-              />
-            </div>
-          </div>
-        </StepShell>
-      );
-    }
-
-    if (currentStep === 3) {
-      return (
-        <StepShell
-          title="Akademik ko'rsatkichlar"
-          subtitle="GPA va IELTS ma'lumotlarini kiriting."
-        >
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-slate-200">GPA</label>
-                <span className="text-sm text-slate-300">{formData.gpa}</span>
-              </div>
-              <div className="flex gap-3 items-center">
-                <input
-                  type="range"
-                  min={0}
-                  max={4}
-                  step={0.1}
-                  value={formData.gpa}
-                  onChange={(e) => setField("gpa", Number(e.target.value))}
-                  className="w-full"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  max={4}
-                  step={0.1}
-                  value={formData.gpa}
-                  onChange={(e) => setField("gpa", Number(e.target.value))}
-                  className="w-24 rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm text-slate-200">IELTS</label>
-                <span className="text-sm text-slate-300">
-                  {formData.noIelts ? "-" : formData.ielts}
-                </span>
-              </div>
-
-              <div className="flex gap-3 items-center">
-                <input
-                  type="range"
-                  min={0}
-                  max={9}
-                  step={0.5}
-                  value={formData.ielts}
-                  onChange={(e) => setField("ielts", Number(e.target.value))}
-                  disabled={formData.noIelts}
-                  className="w-full disabled:opacity-40"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  max={9}
-                  step={0.5}
-                  value={formData.ielts}
-                  onChange={(e) => setField("ielts", Number(e.target.value))}
-                  disabled={formData.noIelts}
-                  className="w-24 rounded-lg bg-[#0F172A] border border-[#334155] px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:opacity-40"
-                />
-              </div>
-
-              <label className="flex items-center gap-2 text-sm text-slate-200 mt-2">
-                <input
-                  type="checkbox"
-                  checked={formData.noIelts}
-                  onChange={(e) => setField("noIelts", e.target.checked)}
-                  className="accent-[#2563EB]"
-                />
-                Hali IELTS topshirmaganman
-              </label>
-            </div>
-          </div>
-        </StepShell>
-      );
-    }
-
-    if (currentStep === 4) {
-      return (
-        <StepShell title="Maqsad" subtitle="Davlatlar va grant turini tanlang.">
-          <div className="space-y-5">
-            <div>
-              <div className="text-sm text-slate-200 mb-2">Maqsad davlatlar</div>
-              <div className="flex flex-wrap gap-2">
-                {COUNTRIES.map((c) => (
-                  <Chip
-                    key={c}
-                    active={formData.countries.includes(c)}
-                    onClick={() => toggleInArray("countries", c)}
-                  >
-                    {c}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-sm text-slate-200 mb-2">Grant turi</div>
-              <div className="flex flex-wrap gap-2">
-                {GRANT_TYPES.map((t) => (
-                  <Chip
-                    key={t}
-                    active={formData.grantTypes.includes(t)}
-                    onClick={() => toggleInArray("grantTypes", t)}
-                  >
-                    {t}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          </div>
-        </StepShell>
-      );
-    }
-
-    return (
-      <StepShell title="Tasdiqlash" subtitle="Kiritilgan ma'lumotlarni tekshiring.">
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-400">Ism</span>
-            <span className="text-slate-100 font-medium">
-              {formData.fullName || "-"}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-400">Tug'ilgan yil</span>
-            <span className="text-slate-100 font-medium">
-              {formData.birthYear || "-"}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-400">Daraja</span>
-            <span className="text-slate-100 font-medium">
-              {degreeLabel(formData.degree)}
-            </span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-400">Soha</span>
-            <span className="text-slate-100 font-medium">
-              {formData.field || "-"}
-            </span>
+                {d.label}
+              </Pill>
+            ))}
           </div>
         </div>
-      </StepShell>
-    );
-  };
 
-  return (
-    <div className="py-8">
-      <div className="mb-5">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-300">
-            {currentStep} of 5
+        <div>
+          <div className="text-sm font-medium text-[#374151] mb-3">
+            Field of Study{" "}
+            <span className="text-[#9CA3AF] font-normal">(ko'p tanlash mumkin)</span>
           </div>
-          <div className="text-sm text-slate-400">{progress}%</div>
+          <div className="flex flex-wrap gap-2">
+            {FIELDS.map((f) => (
+              <Pill
+                key={f}
+                active={form.fields.includes(f)}
+                onClick={() => toggleArr("fields", f)}
+              >
+                {f}
+              </Pill>
+            ))}
+          </div>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-[#1E293B] overflow-hidden border border-[#334155]">
-          <div
-            className="h-full bg-[#2563EB] transition-all"
-            style={{ width: `${progress}%` }}
+      </div>
+    </div>
+  );
+
+  /* ─── STEP 3: Academic & Test Scores ─── */
+  const Step3 = () => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+      <h2 className="text-xl font-bold text-[#1A1A2E]">Your Academic Profile</h2>
+      <p className="text-sm text-[#9CA3AF] mt-1">
+        Bu ma'lumotlar sizga mos grantlarni topishda yordam beradi
+      </p>
+
+      <div className="mt-6 space-y-5">
+        {/* GPA */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-sm font-medium text-[#374151]">GPA</label>
+            <div className="flex gap-1 bg-[#F3F4F6] rounded-lg p-0.5">
+              {["4.0", "100"].map((sys) => (
+                <button
+                  key={sys}
+                  type="button"
+                  onClick={() => set("gpaSystem", sys)}
+                  className={[
+                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                    form.gpaSystem === sys
+                      ? "bg-white text-[#3D3DC4] shadow-sm"
+                      : "text-[#6B7280]",
+                  ].join(" ")}
+                >
+                  {sys} sistema
+                </button>
+              ))}
+            </div>
+          </div>
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            max={form.gpaSystem === "4.0" ? 4 : 100}
+            step={form.gpaSystem === "4.0" ? 0.1 : 1}
+            value={form.gpa}
+            onChange={(e) => set("gpa", e.target.value)}
+            placeholder={form.gpaSystem === "4.0" ? "3.5" : "85"}
           />
         </div>
+
+        {/* IELTS */}
+        <TestInput
+          label="IELTS"
+          value={form.ielts}
+          onChange={(v) => set("ielts", v)}
+          noTest={form.noIelts}
+          onToggle={() => set("noIelts", !form.noIelts)}
+          min={0}
+          max={9}
+          step={0.5}
+          placeholder="6.5"
+        />
+
+        {/* TOEFL */}
+        <TestInput
+          label="TOEFL"
+          value={form.toefl}
+          onChange={(v) => set("toefl", v)}
+          noTest={form.noToefl}
+          onToggle={() => set("noToefl", !form.noToefl)}
+          min={0}
+          max={120}
+          step={1}
+          placeholder="90"
+        />
+
+        {/* SAT */}
+        <TestInput
+          label="SAT"
+          value={form.sat}
+          onChange={(v) => set("sat", v)}
+          noTest={form.noSat}
+          onToggle={() => set("noSat", !form.noSat)}
+          min={400}
+          max={1600}
+          step={10}
+          placeholder="1200"
+        />
+
+        {/* GRE */}
+        <TestInput
+          label="GRE"
+          value={form.gre}
+          onChange={(v) => set("gre", v)}
+          noTest={form.noGre}
+          onToggle={() => set("noGre", !form.noGre)}
+          min={260}
+          max={340}
+          step={1}
+          placeholder="310"
+        />
+
+        {/* GMAT */}
+        <TestInput
+          label="GMAT"
+          value={form.gmat}
+          onChange={(v) => set("gmat", v)}
+          noTest={form.noGmat}
+          onToggle={() => set("noGmat", !form.noGmat)}
+          min={200}
+          max={800}
+          step={10}
+          placeholder="650"
+        />
+
+        {/* Language Level */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField label="Til darajasi">
+            <select
+              className={inputClass}
+              value={form.languageLevel}
+              onChange={(e) => set("languageLevel", e.target.value)}
+            >
+              <option value="">Tanlang</option>
+              {LANG_LEVELS.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </InputField>
+          <InputField label="Qaysi til?">
+            <select
+              className={inputClass}
+              value={form.languageType}
+              onChange={(e) => set("languageType", e.target.value)}
+            >
+              <option value="">Tanlang</option>
+              {LANG_TYPES.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </InputField>
+        </div>
+
+        <div className="flex items-start gap-3 bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl px-4 py-3">
+          <span className="text-lg">💡</span>
+          <p className="text-sm text-[#3D3DC4] font-medium">
+            Ko'proq ma'lumot = Ko'proq mos grantlar
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ─── STEP 4: Goals & Target Countries ─── */
+  const Step4 = () => (
+    <div className="space-y-5">
+      {/* Goals */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+        <h2 className="text-xl font-bold text-[#1A1A2E]">What are you looking for?</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Ko'p tanlash mumkin</p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {GOALS.map(({ value, label, Icon }) => {
+            const active = form.goals.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => toggleArr("goals", value)}
+                className={[
+                  "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                  active
+                    ? "border-[#3D3DC4] bg-[#3D3DC4]/5"
+                    : "border-[#E5E7EB] bg-white hover:border-[#D1D5DB]",
+                ].join(" ")}
+              >
+                <div
+                  className={[
+                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
+                    active ? "bg-[#3D3DC4]/10 text-[#3D3DC4]" : "bg-[#F3F4F6] text-[#9CA3AF]",
+                  ].join(" ")}
+                >
+                  <Icon size={20} />
+                </div>
+                <span
+                  className={[
+                    "text-sm font-medium",
+                    active ? "text-[#3D3DC4]" : "text-[#374151]",
+                  ].join(" ")}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div
-        key={animKey}
-        className="transition-all duration-300 ease-out animate-[fadeSlide_300ms_ease-out]"
-      >
-        {stepContent()}
+      {/* Target Countries */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+        <h2 className="text-xl font-bold text-[#1A1A2E]">Target Countries</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Qaysi davlatlarga qiziqasiz?</p>
+
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {TARGET_COUNTRIES.map(({ name, flag }) => {
+            const active = form.targetCountries.includes(name);
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => toggleArr("targetCountries", name)}
+                className={[
+                  "flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200",
+                  active
+                    ? "border-[#3D3DC4] bg-[#3D3DC4]/5"
+                    : "border-[#E5E7EB] bg-white hover:border-[#D1D5DB]",
+                ].join(" ")}
+              >
+                <span className="text-2xl">{flag}</span>
+                <span
+                  className={[
+                    "text-sm font-medium",
+                    active ? "text-[#3D3DC4]" : "text-[#374151]",
+                  ].join(" ")}
+                >
+                  {name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+    </div>
+  );
 
-      {error && (
-        <p className="mt-4 text-sm text-[#EF4444] bg-[#1E293B] border border-[#EF4444]/40 rounded-lg px-3 py-2">
-          {error}
-        </p>
-      )}
+  const stepContent = [null, Step1, Step2, Step3, Step4];
+  const CurrentStep = stepContent[step];
 
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={back}
-          disabled={currentStep === 1 || saving}
+  return (
+    <div className="min-h-screen bg-[#F0F2F5]">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <StepIndicator current={step} total={4} />
+
+        <div
+          key={animKey}
+          className="animate-[fadeSlide_300ms_ease-out]"
         >
-          Orqaga
-        </Button>
+          {CurrentStep && <CurrentStep />}
+        </div>
 
-        {currentStep < 5 ? (
-          <Button type="button" onClick={next} disabled={saving}>
-            Keyingi
-          </Button>
-        ) : (
-          <Button type="button" onClick={start} disabled={saving}>
-            {saving ? "Saqlanmoqda..." : "Boshlash"}
-          </Button>
+        {error && (
+          <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            {error}
+          </p>
         )}
+
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 1 || saving}
+            className="flex items-center gap-1 text-sm font-medium text-[#6B7280] hover:text-[#374151] disabled:opacity-40 transition-colors"
+          >
+            <ChevronLeft size={16} /> Back
+          </button>
+
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={next}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#3D3DC4] text-white text-sm font-semibold hover:bg-[#3232a8] disabled:opacity-60 transition-all shadow-lg shadow-[#3D3DC4]/25"
+            >
+              CONTINUE <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={finish}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#3D3DC4] text-white text-sm font-semibold hover:bg-[#3232a8] disabled:opacity-60 transition-all shadow-lg shadow-[#3D3DC4]/25"
+            >
+              {saving ? "Saqlanmoqda..." : "FINISH"} <ChevronRight size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       <style>{`
         @keyframes fadeSlide {
-          from { opacity: 0; transform: translateY(10px); }
+          from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
@@ -437,3 +674,32 @@ export default function Onboarding() {
   );
 }
 
+/* ─── Test Input Component ─── */
+function TestInput({ label, value, onChange, noTest, onToggle, min, max, step, placeholder }) {
+  return (
+    <InputField label={label}>
+      <div className="flex gap-3 items-center">
+        <input
+          className={[inputClass, noTest ? "opacity-40" : ""].join(" ")}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={noTest}
+        />
+      </div>
+      <label className="flex items-center gap-2 text-sm text-[#6B7280] mt-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={noTest}
+          onChange={onToggle}
+          className="accent-[#3D3DC4] h-4 w-4"
+        />
+        Hali topshirmaganman
+      </label>
+    </InputField>
+  );
+}
