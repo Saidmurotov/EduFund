@@ -41,13 +41,34 @@ service cloud.firestore {
       allow read, write: if isSelf(userId);
     }
 
-    // 4) verificationLogs
+    // 4) notifications/{userId}/items/{itemId}
+    //    Faqat o'zi o'qiy oladi va isRead ni yangilay oladi
+    //    Yozish faqat admin yoki backend orqali (server-side)
+    match /notifications/{userId}/items/{itemId} {
+      allow read: if isSelf(userId);
+      allow update: if isSelf(userId);
+      allow create, delete: if isAdmin();
+    }
+
+    // 5) userCalendars/{userId}/plans/{planId}
+    //    Faqat o'zi o'qiy va yoza oladi
+    match /userCalendars/{userId}/plans/{planId} {
+      allow read, write: if isSelf(userId);
+    }
+
+    // 6) paymentIntents — foydalanuvchi yaratadi, admin o'qiydi
+    match /paymentIntents/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 7) verificationLogs
     match /verificationLogs/{logId} {
       allow read: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
-    // 5) Default deny
+    // 8) Default deny
     match /{document=**} {
       allow read, write: if false;
     }

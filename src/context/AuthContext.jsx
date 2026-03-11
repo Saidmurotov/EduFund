@@ -1,133 +1,122 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
+  onAuthStateChanged,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../lib/firebase.js";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Auth holatini kuzatish
   useEffect(() => {
-    if (!auth || !db) {
-      setUser(null);
-      setFirebaseUser(null);
-      setLoading(false);
-      return;
-    }
-
-    const unsub = onAuthStateChanged(auth, async (fbUser) => {
-      if (!fbUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Firestore dan user ma'lumotlarini olish
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setUser({ ...currentUser, ...userDoc.data() });
+        } else {
+          // Agar user mavjud bo'lsa-yu Firestore da topilmasa (kamdan-kam uchraydi)
+          setUser(currentUser);
+        }
+      } else {
         setUser(null);
-        setFirebaseUser(null);
-        setLoading(false);
-        return;
       }
+      setLoading(false);
+    });
 
-      const userRef = doc(db, "users", fbUser.uid);
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          userId: fbUser.uid,
-          name: fbUser.displayName || "",
-          email: fbUser.email,
+    return () => unsubscribe();
+  }, []);
+
+  // Google bilan kirish (Popup orqali)
+  const loginWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const googleUser = result.user;
+
+      // Firestore da user mavjudligini tekshirish
+      const userRef = doc(db, "users", googleUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        const userData = {
+          userId: googleUser.uid,
+          name: googleUser.displayName,
+          email: googleUser.email,
           role: "student",
           isPremium: false,
           createdAt: serverTimestamp(),
           preferences: {},
-        });
+        };
+        await setDoc(userRef, userData);
+        setUser({ ...googleUser, ...userData });
       }
-
-      setFirebaseUser(fbUser);
-      setUser({
-        uid: fbUser.uid,
-        email: fbUser.email,
-        name: fbUser.displayName || "",
-      });
-      setLoading(false);
-    });
-
-    return () => unsub();
-  }, []);
-
-  const loginWithEmail = async (email, password) => {
-    if (!auth) throw new Error("Firebase auth not configured");
-    const { user: fbUser } = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    return fbUser;
+      return googleUser;
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      throw error;
+    }
   };
 
-  const loginWithGoogle = async () => {
-    if (!auth || !db) throw new Error("Firebase not configured");
-    const { user: fbUser } = await signInWithPopup(auth, googleProvider);
-    const userRef = doc(db, "users", fbUser.uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      await setDoc(userRef, {
-        userId: fbUser.uid,
-        name: fbUser.displayName || "",
-        email: fbUser.email,
+  // Email/Parol orqali ro'yxatdan o'tish
+  const registerWithEmail = async (email, password, name) => {
+    try {
+      const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Profilni yangilash
+      await updateProfile(newUser, { displayName: name });
+
+      const userData = {
+        userId: newUser.uid,
+        name: name,
+        email: email,
         role: "student",
         isPremium: false,
         createdAt: serverTimestamp(),
         preferences: {},
-      });
+      };
+
+      // Firestore da user yaratish
+      await setDoc(doc(db, "users", newUser.uid), userData);
+      setUser({ ...newUser, ...userData });
+
+      return newUser;
+    } catch (error) {
+      console.error("Registration Error:", error);
+      throw error;
     }
-    return fbUser;
   };
 
-  const registerWithEmail = async (email, password, name) => {
-    if (!auth || !db) throw new Error("Firebase not configured");
-    const { user: fbUser } = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    if (name) await updateProfile(fbUser, { displayName: name });
-
-    const userRef = doc(db, "users", fbUser.uid);
-    await setDoc(userRef, {
-      userId: fbUser.uid,
-      name: name || "",
-      email: fbUser.email,
-      role: "student",
-      isPremium: false,
-      createdAt: serverTimestamp(),
-      preferences: {},
-    });
-
-    return fbUser;
+  // Email/Parol orqali kirish
+  const loginWithEmail = (email, password) => {
+    return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const logout = async () => {
-    if (!auth) return;
-    await signOut(auth);
-    setUser(null);
-    setFirebaseUser(null);
+  // Chiqish
+  const logout = () => {
+    return signOut(auth);
   };
 
+  // API so'rovlari uchun ID Token olish
   const getIdToken = async () => {
-    if (!firebaseUser) return null;
-    return await firebaseUser.getIdToken();
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+    return currentUser.getIdToken(false);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        firebaseUser,
         loading,
         loginWithEmail,
         loginWithGoogle,
@@ -136,12 +125,15 @@ export function AuthProvider({ children }) {
         getIdToken,
       }}
     >
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuthContext() {
-  return useContext(AuthContext);
-}
-
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

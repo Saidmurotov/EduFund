@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useToast } from "../context/ToastContext.jsx";
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 
 export default function Register() {
-  const { registerWithEmail, loginWithGoogle } = useAuth();
+  const { user, registerWithEmail, loginWithGoogle } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
@@ -16,6 +16,14 @@ export default function Register() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Agar user allaqachon login bo'lsa (Google redirect qaytganda)
+  useEffect(() => {
+    if (user) {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Parol kuchliligi logikasi
   const getPwStrength = (pw) => {
@@ -56,16 +64,22 @@ export default function Register() {
 
   const handleGoogle = async () => {
     setError("");
-    setLoading(true);
+    setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast?.showToast?.("Muvaffaqiyatli!", "success");
-      navigate("/onboarding");
+      // signInWithRedirect: sahifa Google ga yo'naltiriladi
+      // Qaytganda useEffect user ni sezib /onboarding ga o'tadi
     } catch (err) {
       console.error(err);
-      setError("Google bilan ro'yxatdan o'tishda xato yuz berdi.");
-    } finally {
-      setLoading(false);
+      const code = err?.code || "";
+      if (code === "auth/popup-blocked") {
+        setError("Popup bloklandi. Brauzer sozlamalarini tekshiring.");
+      } else if (code === "auth/unauthorized-domain") {
+        setError("Firebase Console → Auth → Authorized domains ga 'localhost' qo'shing.");
+      } else {
+        setError("Google bilan kirishda xato: " + (err?.message || code));
+      }
+      setGoogleLoading(false);
     }
   };
 

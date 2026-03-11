@@ -4,7 +4,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
 import {
-  GraduationCap,
+  Shield,
   Briefcase,
   Globe,
   Users,
@@ -60,7 +60,7 @@ const LANG_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const LANG_TYPES = ["Ingliz", "Nemis", "Koreys", "Fransuz", "Boshqa"];
 
 const GOALS = [
-  { value: "full_grant", label: "Full Grant", Icon: GraduationCap },
+  { value: "full_grant", label: "Full Grant", Icon: Shield },
   { value: "internship", label: "Internship", Icon: Briefcase },
   { value: "language", label: "Learn Language", Icon: Globe },
   { value: "networking", label: "Networking", Icon: Users },
@@ -178,7 +178,7 @@ export default function Onboarding() {
     region: "",
     degree: "",
     fields: [],
-    gpa: "",
+    gpa: "3.0",
     gpaSystem: "4.0",
     ielts: "",
     noIelts: false,
@@ -245,15 +245,10 @@ export default function Onboarding() {
             gpa: form.gpa ? Number(form.gpa) : null,
             gpaSystem: form.gpaSystem,
             ielts: form.noIelts ? null : form.ielts ? Number(form.ielts) : null,
-            noIelts: form.noIelts,
             toefl: form.noToefl ? null : form.toefl ? Number(form.toefl) : null,
-            noToefl: form.noToefl,
             sat: form.noSat ? null : form.sat ? Number(form.sat) : null,
-            noSat: form.noSat,
             gre: form.noGre ? null : form.gre ? Number(form.gre) : null,
-            noGre: form.noGre,
             gmat: form.noGmat ? null : form.gmat ? Number(form.gmat) : null,
-            noGmat: form.noGmat,
             languageLevel: form.languageLevel,
             languageType: form.languageType,
             goals: form.goals,
@@ -410,16 +405,27 @@ export default function Onboarding() {
               ))}
             </div>
           </div>
-          <input
-            className={inputClass}
-            type="number"
-            min={0}
-            max={form.gpaSystem === "4.0" ? 4 : 100}
-            step={form.gpaSystem === "4.0" ? 0.1 : 1}
-            value={form.gpa}
-            onChange={(e) => set("gpa", e.target.value)}
-            placeholder={form.gpaSystem === "4.0" ? "3.5" : "85"}
-          />
+          <div className="space-y-3">
+            <input
+              type="range"
+              min={0}
+              max={form.gpaSystem === "4.0" ? 4 : 100}
+              step={form.gpaSystem === "4.0" ? 0.1 : 1}
+              value={form.gpa}
+              onChange={(e) => set("gpa", e.target.value)}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3D3DC4]"
+            />
+            <input
+              className={inputClass}
+              type="number"
+              min={0}
+              max={form.gpaSystem === "4.0" ? 4 : 100}
+              step={form.gpaSystem === "4.0" ? 0.1 : 1}
+              value={form.gpa}
+              onChange={(e) => set("gpa", e.target.value)}
+              placeholder={form.gpaSystem === "4.0" ? "3.5" : "85"}
+            />
+          </div>
         </div>
 
         {/* IELTS */}
@@ -579,7 +585,7 @@ export default function Onboarding() {
         <h2 className="text-xl font-bold text-[#1A1A2E]">Target Countries</h2>
         <p className="text-sm text-[#9CA3AF] mt-1">Qaysi davlatlarga qiziqasiz?</p>
 
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-3">
           {TARGET_COUNTRIES.map(({ name, flag }) => {
             const active = form.targetCountries.includes(name);
             return (

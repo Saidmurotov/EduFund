@@ -1,6 +1,6 @@
 import { auth, db } from "../lib/firebase-admin.js";
 
-export async function verifyToken(req, res, next) {
+async function verifyToken(req, res, next) {
   try {
     const authHeader = req.headers.authorization || "";
     const [, token] = authHeader.split(" ");
@@ -28,3 +28,11 @@ export async function verifyToken(req, res, next) {
   }
 }
 
+function isAdmin(req, res, next) {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ message: "Faqat admin uchun ruxsat." });
+  }
+  return next();
+}
+
+export { verifyToken, isAdmin };

@@ -11,7 +11,7 @@ const tabs = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 inset-x-0 border-t border-[#334155] bg-[#0F172A]/90 backdrop-blur-sm">
+    <nav className="fixed bottom-0 inset-x-0 border-t border-[#334155] bg-[#0F172A]/90 backdrop-blur-sm lg:hidden">
       <div className="max-w-3xl mx-auto px-4 py-2 flex items-end justify-between">
         {tabs.map(({ to, label, Icon, primary }) => (
           <NavLink

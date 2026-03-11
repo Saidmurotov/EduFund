@@ -4,33 +4,22 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDG2u4PDV1t0c984spcrhtj7jSdeA6FS6k",
+  authDomain: "edufund-ai.firebaseapp.com",
+  projectId: "edufund-ai",
+  storageBucket: "edufund-ai.firebasestorage.app",
+  messagingSenderId: "286765347572",
+  appId: "1:286765347572:web:3fB6714f4d9833a11324a1",
+  measurementId: "G-WX8GWFRGMV"
 };
 
-const hasConfig =
-  Boolean(firebaseConfig.apiKey) &&
-  Boolean(firebaseConfig.authDomain) &&
-  Boolean(firebaseConfig.projectId);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
-let app = null;
-export let auth = null;
-export let db = null;
-export let storage = null;
+// Initialize Services
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
-if (hasConfig) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-} else {
-  console.warn(
-    "[Firebase] VITE_FIREBASE_* env topilmadi. Auth/Firestore o'chirilgan."
-  );
-}
-
+export default app;

@@ -1,4 +1,8 @@
-import cron from "node-cron";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const cron = require("node-cron");
+
+
 import admin from "firebase-admin";
 
 const db = admin.firestore();

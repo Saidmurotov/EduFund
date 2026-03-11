@@ -92,7 +92,7 @@ export default function GrantCalendar() {
                     </Button>
                 </Card>
             ) : (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {plans.map((plan) => {
                         const completed = plan.steps?.filter((s) => s.completed)?.length || 0;
                         const total = plan.steps?.length || 0;

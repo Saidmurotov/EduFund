@@ -11,48 +11,27 @@ function norm(s) {
   return String(s || "").trim().toLowerCase();
 }
 
+const MATCH_CRITERIA = {
+  country: (p, g) => (Array.isArray(p.countries) && p.countries.includes(g.country)) || (Array.isArray(p.targetCountries) && p.targetCountries.includes(g.country)) ? 30 : 0,
+  degree: (p, g) => norm(p.degree) && Array.isArray(g.degree) && g.degree.map(norm).includes(norm(p.degree)) ? 25 : 0,
+  field: (p, g) => {
+    const userFields = Array.isArray(p.fields) ? p.fields.map(norm) : [];
+    const grantFields = Array.isArray(g.field) ? g.field.map(norm) : [];
+    if (userFields.length && grantFields.length) {
+      return grantFields.some(f => f === "all fields") || userFields.some(f => grantFields.includes(f)) ? 20 : 0;
+    }
+    return (userFields.length === 0 || grantFields.length === 0) ? 10 : 0;
+  },
+  gpa: (p, g) => (typeof p.gpa === "number" && typeof g.minGPA === "number" && p.gpa >= g.minGPA) ? 15 : 0,
+  ielts: (p, g) => (typeof p.ielts === "number" && typeof g.minIELTS === "number" && p.ielts >= g.minIELTS) ? 10 : 0,
+};
+
 function computeMatchPercent(prefs, grant) {
   const p = prefs || {};
   const g = grant || {};
 
-  let score = 0;
-
-  // Country match: +30%
-  if (Array.isArray(p.countries) && p.countries.length && p.countries.includes(g.country)) {
-    score += 30;
-  } else if (Array.isArray(p.targetCountries) && p.targetCountries.length && p.targetCountries.includes(g.country)) {
-    score += 30;
-  }
-
-  // Degree match: +25%
-  const degreePref = norm(p.degree);
-  if (degreePref && Array.isArray(g.degree) && g.degree.map(norm).includes(degreePref)) {
-    score += 25;
-  }
-
-  // Field match: +20%
-  const userFields = Array.isArray(p.fields) ? p.fields.map(norm) : [];
-  const grantFields = Array.isArray(g.field) ? g.field.map(norm) : [];
-  if (userFields.length && grantFields.length) {
-    const hasAllFields = grantFields.some((f) => f === "all fields");
-    const hasMatch = userFields.some((f) => grantFields.includes(f));
-    if (hasAllFields || hasMatch) score += 20;
-  } else if (userFields.length === 0 || grantFields.length === 0) {
-    // No field specified means no penalty
-    score += 10;
-  }
-
-  // GPA check: +15%
-  if (typeof p.gpa === "number" && typeof g.minGPA === "number") {
-    if (p.gpa >= g.minGPA) score += 15;
-  }
-
-  // IELTS check: +10%
-  if (typeof p.ielts === "number" && typeof g.minIELTS === "number") {
-    if (p.ielts >= g.minIELTS) score += 10;
-  }
-
-  return Math.min(100, score);
+  const totalScore = Object.values(MATCH_CRITERIA).reduce((acc, criteriaFunc) => acc + criteriaFunc(p, g), 0);
+  return Math.min(100, totalScore);
 }
 
 export async function getAllGrants(req, res) {

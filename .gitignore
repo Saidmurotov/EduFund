@@ -8,4 +8,5 @@ dist/
 
 server/node_modules/
 server/.env
+server/serviceAccountKey.json
 

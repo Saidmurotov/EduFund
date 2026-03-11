@@ -126,29 +126,41 @@ export default function AdminStats() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Uzbekistan Map */}
+                <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-slate-50 mb-6 flex items-center gap-2">
+                        <MapPin size={20} className="text-[#3D3DC4]" /> Hududlar xaritasi
+                    </h3>
+                    <div className="relative aspect-[4/3] w-full flex items-center justify-center">
+                        <UzbekistanMap stats={stats} />
+                    </div>
+                </Card>
+
                 {/* Regions List */}
                 <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-6">
                     <h3 className="text-lg font-bold text-slate-50 mb-6 flex items-center gap-2">
-                        <MapPin size={20} className="text-rose-500" /> Hududlar bo'yicha
+                        <BarChart3 size={20} className="text-rose-500" /> Respublika bo'yicha
                     </h3>
-                    <div className="space-y-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                         {regionData.map(({ name, value }) => {
                             const percent = (value / stats.totalUsers) * 100;
                             return (
-                                <div key={name} className="space-y-1.5">
+                                <div key={name} className="space-y-1.5 group">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-slate-300 font-medium">{name}</span>
+                                        <span className="text-slate-300 font-medium group-hover:text-white transition-colors">{name}</span>
                                         <span className="text-slate-500">{value} ta</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-[#0F172A] rounded-full overflow-hidden">
-                                        <div className="h-full bg-[#3D3DC4] transition-all" style={{ width: `${percent}%` }} />
+                                        <div className="h-full bg-[#3D3DC4] transition-all duration-700" style={{ width: `${percent}%` }} />
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
                 </Card>
+            </div>
 
+            <div className="grid grid-cols-1 gap-6">
                 {/* Categories Bar Chart */}
                 <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-6">
                     <h3 className="text-lg font-bold text-slate-50 mb-6 flex items-center gap-2">
@@ -183,9 +195,67 @@ export default function AdminStats() {
     );
 }
 
+function UzbekistanMap({ stats }) {
+    const [hovered, setHovered] = useState(null);
+    const regions = [
+        { id: "karakalpakstan", name: "Qoraqalpog'iston", d: "M75,85 L145,55 L185,115 L125,185 L55,145 Z" },
+        { id: "khorezm", name: "Xorazm", d: "M130,195 L155,180 L165,210 L140,225 Z" },
+        { id: "navoi", name: "Navoiy", d: "M195,110 L285,45 L345,115 L285,205 Z" },
+        { id: "bukhara", name: "Buxoro", d: "M175,220 L275,215 L265,275 L185,285 Z" },
+        { id: "samarkand", name: "Samarqand", d: "M295,215 L355,205 L365,255 L305,265 Z" },
+        { id: "kashkadarya", name: "Qashqadaryo", d: "M285,285 L375,275 L385,345 L305,355 Z" },
+        { id: "surkhandarya", name: "Surxondaryo", d: "M385,355 L425,345 L435,425 L365,435 Z" },
+        { id: "jizzakh", name: "Jizzax", d: "M365,195 L415,185 L425,245 L375,255 Z" },
+        { id: "syrdarya", name: "Sirdaryo", d: "M425,185 L445,175 L455,215 L435,225 Z" },
+        { id: "tashkent_v", name: "Toshkent viloyati", d: "M455,165 L515,125 L545,175 L465,205 Z" },
+        { id: "tashkent_s", name: "Toshkent shahri", d: "M485,155 L505,155 L505,175 L485,175 Z" },
+        { id: "fergana", name: "Farg'ona", d: "M515,225 L575,215 L585,255 L525,265 Z" },
+        { id: "andijan", name: "Andijon", d: "M585,205 L625,195 L635,235 L595,245 Z" },
+        { id: "namangan", name: "Namangan", d: "M535,165 L605,155 L615,195 L545,205 Z" },
+    ];
+
+    const maxCount = Math.max(...Object.values(stats.byRegion || {}).map(v => Number(v)), 1);
+
+    return (
+        <div className="w-full h-full relative group/map">
+            <svg viewBox="0 0 700 500" className="w-full h-full drop-shadow-2xl">
+                {regions.map((reg) => {
+                    const count = stats.byRegion[reg.name] || 0;
+                    const intensity = count / maxCount;
+                    const fill = count > 0 ? `rgba(61, 61, 196, ${0.3 + intensity * 0.7})` : "#0F172A";
+                    const isHovered = hovered?.name === reg.name;
+
+                    return (
+                        <path
+                            key={reg.id}
+                            d={reg.d}
+                            fill={fill}
+                            stroke={isHovered ? "#6366F1" : "#334155"}
+                            strokeWidth={isHovered ? 2 : 1}
+                            className="transition-all duration-300 cursor-pointer hover:brightness-125"
+                            onMouseMove={(e) => setHovered({ name: reg.name, count, x: e.clientX, y: e.clientY })}
+                            onMouseLeave={() => setHovered(null)}
+                        />
+                    );
+                })}
+            </svg>
+
+            {hovered && (
+                <div
+                    className="fixed z-[100] pointer-events-none bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 shadow-2xl"
+                    style={{ left: hovered.x + 15, top: hovered.y - 40 }}
+                >
+                    <div className="text-xs font-bold text-white">{hovered.name}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{hovered.count} ta foydalanuvchi</div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function StatCard({ title, value, Icon }) {
     return (
-        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-4 flex items-center gap-4">
+        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl p-4 flex items-center gap-4 hover:border-[#3D3DC4]/40 transition-colors">
             <div className="h-10 w-10 rounded-xl bg-[#3D3DC4]/10 text-[#3D3DC4] flex items-center justify-center shrink-0">
                 <Icon size={20} />
             </div>

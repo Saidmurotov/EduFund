@@ -4,10 +4,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 if (!admin.apps.length) {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({ credential: admin.credential.cert(sa) });
+  const saPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const saJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+  if (saJson) {
+    admin.initializeApp({ credential: admin.credential.cert(JSON.parse(saJson)) });
+  } else if (saPath) {
+    admin.initializeApp({ credential: admin.credential.cert(saPath) });
   } else {
+    // Standard approach
     admin.initializeApp({ credential: admin.credential.applicationDefault() });
   }
 }

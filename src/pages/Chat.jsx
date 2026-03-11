@@ -132,7 +132,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="py-6">
+    <div className="py-6 max-w-4xl mx-auto">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xl font-semibold text-slate-50">AI Advisor</div>
@@ -167,14 +167,14 @@ export default function Chat() {
 
       <div
         ref={scrollerRef}
-        className="mt-4 h-[calc(100vh-18rem)] overflow-y-auto pr-1 space-y-3"
+        className="mt-4 h-[calc(100vh-18rem)] lg:h-[calc(100vh-14rem)] overflow-y-auto pr-1 space-y-3"
       >
         {messages.map((m, idx) => (
           <MessageBubble key={m.id || idx} message={m} isUser={m.role === "user"} />
         ))}
       </div>
 
-      <div className="mt-4 sticky bottom-16">
+      <div className="mt-4 sticky bottom-16 lg:bottom-4">
         <div className="bg-[#1E293B] border border-[#334155] rounded-2xl p-3 flex items-center gap-2">
           <input
             value={input}

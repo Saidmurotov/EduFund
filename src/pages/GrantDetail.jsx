@@ -11,6 +11,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { SkeletonLine } from "../components/ui/Skeleton.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import { countryFlag, initials } from "../lib/utils.js";
+import CalendarModal from "../components/calendar/CalendarModal.jsx";
 
 function TrustBadge({ trustScore, verificationStatus }) {
   const score = typeof trustScore === "number" ? trustScore : 0;

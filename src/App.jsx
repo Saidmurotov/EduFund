@@ -1,8 +1,9 @@
+import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import Navbar from "./components/layout/Navbar.jsx";
-import BottomNav from "./components/layout/BottomNav.jsx";
 import ProtectedRoute from "./components/layout/ProtectedRoute.jsx";
+import AppLayout from "./components/layout/AppLayout.jsx";
 
+// Pages
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
@@ -17,110 +18,50 @@ import GrantCalendar from "./pages/GrantCalendar.jsx";
 import AdminStats from "./pages/AdminStats.jsx";
 import Premium from "./pages/Premium.jsx";
 
-export default function App() {
+/* Helper: wrap a page inside ProtectedRoute + AppLayout */
+function AppPage({ children, adminOnly = false }) {
   return (
-    <div className="min-h-screen bg-background text-slate-100 flex flex-col">
-      <Navbar />
-      <main className="flex-1 pb-16 px-4 max-w-3xl mx-auto w-full">
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          <Route
-            path="/onboarding"
-            element={
-              <ProtectedRoute>
-                <Onboarding />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/search"
-            element={
-              <ProtectedRoute>
-                <Search />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Chat />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <ProtectedRoute>
-                <GrantCalendar />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/premium"
-            element={
-              <ProtectedRoute>
-                <Premium />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/stats"
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminStats />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/grants/:id"
-            element={
-              <ProtectedRoute>
-                <GrantDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/roadmap"
-            element={
-              <ProtectedRoute>
-                <Roadmap />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/saved"
-            element={
-              <ProtectedRoute>
-                <Saved />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </main>
-      <BottomNav />
-    </div>
+    <ProtectedRoute adminOnly={adminOnly}>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
   );
 }
 
+export default function App() {
+  return (
+    <Routes>
+      {/* ── Public (no sidebar, no bottom nav) ── */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ── App pages (sidebar on desktop, bottom nav on mobile) ── */}
+      <Route path="/dashboard" element={<AppPage><Dashboard /></AppPage>} />
+      <Route path="/search" element={<AppPage><Search /></AppPage>} />
+      <Route path="/chat" element={<AppPage><Chat /></AppPage>} />
+      <Route path="/grants/:id" element={<AppPage><GrantDetail /></AppPage>} />
+      <Route path="/roadmap" element={<AppPage><Roadmap /></AppPage>} />
+      <Route path="/saved" element={<AppPage><Saved /></AppPage>} />
+      <Route path="/calendar" element={<AppPage><GrantCalendar /></AppPage>} />
+      <Route path="/profile" element={<AppPage><Profile /></AppPage>} />
+      <Route path="/premium" element={<AppPage><Premium /></AppPage>} />
+
+      {/* ── Admin ── */}
+      <Route
+        path="/admin/stats"
+        element={<AppPage adminOnly><AdminStats /></AppPage>}
+      />
+
+      {/* ── Redirects ── */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
