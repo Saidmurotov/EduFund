@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Info, SendHorizonal } from "lucide-react";
 import MessageBubble from "../components/chat/MessageBubble.jsx";
 import { useAuth } from "../hooks/useAuth.js";
-import { api, withAuth } from "../lib/api.js";
+import { askGemini } from "../lib/gemini.js";
 import { useToast } from "../context/ToastContext.jsx";
 
 const LIMIT = 5;
@@ -104,17 +104,11 @@ export default function Chat() {
     ]);
 
     try {
-      const headers = await withAuth(getIdToken);
-      const res = await api.post(
-        "/ai/chat",
-        { message: text, userId: user.uid, conversationHistory },
-        { headers }
-      );
+      const replyText = await askGemini(text, conversationHistory);
 
-      const reply = res.data?.reply || "Kechirasiz, javob topilmadi.";
       setMessages((p) =>
         p.map((m) =>
-          m.id === typingId ? { ...m, content: reply, timestamp: Date.now() } : m
+          m.id === typingId ? { ...m, content: replyText, timestamp: Date.now() } : m
         )
       );
 
