@@ -6,6 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../lib/firebase.js";
@@ -40,7 +41,11 @@ export const AuthProvider = ({ children }) => {
   // Google bilan kirish (Popup orqali)
   const loginWithGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      // auth obyektini edufund-ai.firebaseapp.com domain orqali ishlatish
+      const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
 
       // Firestore da user mavjudligini tekshirish
@@ -50,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       if (!userSnap.exists()) {
         const userData = {
           userId: googleUser.uid,
-          name: googleUser.displayName,
+          name: googleUser.displayName || 'User',
           email: googleUser.email,
           role: "student",
           isPremium: false,
@@ -60,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         await setDoc(userRef, userData);
         setUser({ ...googleUser, ...userData });
       }
-      return googleUser;
+      return result;
     } catch (error) {
       console.error("Google Login Error:", error);
       throw error;
