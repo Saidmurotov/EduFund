@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
+import CustomYearPicker from "../components/ui/CustomYearPicker.jsx";
 import {
   Shield,
   Briefcase,
@@ -282,15 +283,12 @@ export default function Onboarding() {
           />
         </InputField>
 
-        <InputField label="Yosh">
-          <input
-            className={inputClass}
-            type="number"
-            min={14}
-            max={60}
+        <InputField label="Tug'ilgan yilingiz">
+          <CustomYearPicker
             value={form.age}
-            onChange={(e) => set("age", e.target.value)}
-            placeholder="Yoshingiz (14-60)"
+            onChange={(val) => set("age", val)}
+            min={1975}
+            max={2007}
           />
         </InputField>
 
