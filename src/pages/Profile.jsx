@@ -178,14 +178,20 @@ export default function Profile() {
           {/* Premium Promo */}
           {!isPremium && (
             <Card className="bg-gradient-to-r from-[#3D3DC4] to-[#6366F1] border-none rounded-[24px] p-6 text-white overflow-hidden relative group cursor-pointer" onClick={() => navigate('/premium')}>
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="space-y-1">
+              <div className="relative z-10 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold flex items-center gap-2">
                     <Flame size={20} className="text-amber-300 fill-amber-300" /> Premium'ga o'ting
                   </h2>
-                  <p className="text-white/80 text-xs">Cheksiz AI maslahat, 12-oillik Roadmap va boshqa imkoniyatlar.</p>
+                  <ChevronRight size={20} className="text-white/40 group-hover:text-white transition-all transform group-hover:translate-x-1" />
                 </div>
-                <ChevronRight size={24} className="text-white/40 group-hover:text-white transition-all transform group-hover:translate-x-1" />
+                <ul className="text-white/90 text-sm space-y-2.5 font-medium">
+                  <li className="flex items-start gap-2"><CheckCircle2 size={18} className="text-amber-300 shrink-0 mt-px" /> Cheksiz AI chat (kuniga 5 o'rniga)</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 size={18} className="text-amber-300 shrink-0 mt-px" /> To'liq Roadmap (12-18 oylik)</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 size={18} className="text-amber-300 shrink-0 mt-px" /> Barcha grantlar filtri</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 size={18} className="text-amber-300 shrink-0 mt-px" /> Deadline push eslatmalari</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 size={18} className="text-amber-300 shrink-0 mt-px" /> AI priority matching</li>
+                </ul>
               </div>
               <div className="absolute top-0 right-0 h-full w-1/3 bg-white/10 skew-x-[-20deg] blur-lg" />
             </Card>
