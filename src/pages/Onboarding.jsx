@@ -4,6 +4,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
 import CustomYearPicker from "../components/ui/CustomYearPicker.jsx";
+import FieldSelector from "../components/ui/FieldSelector.jsx";
 import {
   Shield,
   Briefcase,
@@ -43,18 +44,6 @@ const EDUCATION_LEVELS = [
   { label: "Bachelor", value: "bachelor" },
   { label: "Master", value: "master" },
   { label: "PhD", value: "phd" },
-];
-
-const FIELDS = [
-  "IT & CS",
-  "Business",
-  "Engineering",
-  "Medical",
-  "Arts",
-  "Law",
-  "Economics",
-  "Education",
-  "Other",
 ];
 
 const LANG_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -178,7 +167,7 @@ export default function Onboarding() {
     gender: "",
     region: "",
     degree: "",
-    fields: [],
+    field: "",
     gpa: "3.0",
     gpaSystem: "4.0",
     ielts: "",
@@ -242,7 +231,7 @@ export default function Onboarding() {
             gender: form.gender,
             region: form.region,
             degree: form.degree,
-            fields: form.fields,
+            field: form.field,
             gpa: form.gpa ? Number(form.gpa) : null,
             gpaSystem: form.gpaSystem,
             ielts: form.noIelts ? null : form.ielts ? Number(form.ielts) : null,
@@ -353,20 +342,12 @@ export default function Onboarding() {
 
         <div>
           <div className="text-sm font-medium text-[#374151] mb-3">
-            Field of Study{" "}
-            <span className="text-[#9CA3AF] font-normal">(ko'p tanlash mumkin)</span>
+            Ixtisoslik (Field of Study)
           </div>
-          <div className="flex flex-wrap gap-2">
-            {FIELDS.map((f) => (
-              <Pill
-                key={f}
-                active={form.fields.includes(f)}
-                onClick={() => toggleArr("fields", f)}
-              >
-                {f}
-              </Pill>
-            ))}
-          </div>
+          <FieldSelector
+            value={form.field}
+            onChange={(val) => set("field", val)}
+          />
         </div>
       </div>
     </div>
