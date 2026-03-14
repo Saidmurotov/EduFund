@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { Calendar, Home, MessageCircle, Search, User } from "lucide-react";
+import ThemeToggle from "../ui/ThemeToggle.jsx";
 
 const tabs = [
   { to: "/dashboard", label: "Home", Icon: Home },
@@ -11,7 +12,10 @@ const tabs = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 inset-x-0 border-t border-[#334155] bg-[#0F172A]/90 backdrop-blur-sm lg:hidden">
+    <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 dark:border-[#334155] bg-white/90 dark:bg-[#0F172A]/90 backdrop-blur-sm lg:hidden transition-colors">
+      <div className="absolute -top-14 right-4 z-50 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800">
+        <ThemeToggle />
+      </div>
       <div className="max-w-3xl mx-auto px-4 py-2 flex items-end justify-between">
         {tabs.map(({ to, label, Icon, primary }) => (
           <NavLink
@@ -21,7 +25,7 @@ export default function BottomNav() {
               [
                 "flex-1 flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
                 primary ? "relative -mt-4" : "",
-                isActive ? "text-[#3D3DC4]" : "text-[#64748B]",
+                isActive ? "text-[#3D3DC4]" : "text-slate-500 dark:text-[#64748B]",
               ].join(" ")
             }
           >
