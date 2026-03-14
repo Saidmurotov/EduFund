@@ -354,165 +354,155 @@ export default function Onboarding() {
   );
 
   /* ─── STEP 3: Academic & Test Scores ─── */
-  const Step3 = () => (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
-      <h2 className="text-xl font-bold text-[#1A1A2E]">Your Academic Profile</h2>
-      <p className="text-sm text-[#9CA3AF] mt-1">
-        Bu ma'lumotlar sizga mos grantlarni topishda yordam beradi
-      </p>
+  const Step3 = () => {
+    const is100 = form.gpaSystem === "100";
+    const gpaMax = is100 ? 100 : 4.0;
+    const gpaStep = is100 ? 1 : 0.1;
+    const gpaVal = Number(form.gpa) || 0;
+    const gpaPercent = ((gpaVal) / gpaMax) * 100;
 
-      <div className="mt-6 space-y-5">
-        {/* GPA */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium text-[#374151]">GPA</label>
-            <div className="flex gap-1 bg-[#F3F4F6] rounded-lg p-0.5">
-              {["4.0", "100"].map((sys) => (
-                <button
-                  key={sys}
-                  type="button"
-                  onClick={() => set("gpaSystem", sys)}
-                  className={[
-                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all",
-                    form.gpaSystem === sys
-                      ? "bg-white text-[#3D3DC4] shadow-sm"
-                      : "text-[#6B7280]",
-                  ].join(" ")}
-                >
-                  {sys} sistema
-                </button>
-              ))}
+    const ieltsVal = Number(form.ielts) || 0;
+    const ieltsPercent = ((ieltsVal) / 9.0) * 100;
+
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E5E7EB]">
+        <h2 className="text-xl font-bold text-[#1A1A2E]">Akademik Ko'rsatkichlar</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          Bu ma'lumotlar sizga mos grantlarni topishda yordam beradi
+        </p>
+
+        <div className="mt-8 space-y-10">
+          {/* GPA Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-base font-semibold text-[#1A1A2E]">GPA</span>
+              <span className="bg-[#2563EB] text-white px-3 py-1 rounded-full text-sm font-bold shadow-sm">
+                {form.gpa || (is100 ? "0" : "0.0")}
+              </span>
+            </div>
+            
+            <div className="mb-6 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { set("gpaSystem", "4.0"); set("gpa", "3.0"); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
+                  !is100 ? "border-[#2563EB] bg-[#2563EB]/10 text-[#2563EB]" : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]"
+                }`}
+              >
+                4.0 tizim
+              </button>
+              <button
+                type="button"
+                onClick={() => { set("gpaSystem", "100"); set("gpa", "80"); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border-2 ${
+                  is100 ? "border-[#2563EB] bg-[#2563EB]/10 text-[#2563EB]" : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]"
+                }`}
+              >
+                100 tizim
+              </button>
+            </div>
+
+            <div className="relative pt-2">
+              <input
+                type="range"
+                min={0}
+                max={gpaMax}
+                step={gpaStep}
+                value={form.gpa || 0}
+                onChange={(e) => set("gpa", e.target.value)}
+                className="w-full appearance-none h-2 rounded-full cursor-pointer custom-slider"
+                style={{
+                  background: `linear-gradient(to right, #2563EB 0%, #2563EB ${gpaPercent}%, #334155 ${gpaPercent}%, #334155 100%)`
+                }}
+              />
+              <div className="flex justify-between text-xs text-[#6B7280] mt-3 px-1 font-medium">
+                <span>0{is100 ? "" : ".0"}</span>
+                <span>{is100 ? "50" : "2.0"}</span>
+                <span>{is100 ? "100" : "4.0"}</span>
+              </div>
             </div>
           </div>
-          <div className="space-y-3">
-            <input
-              type="range"
-              min={0}
-              max={form.gpaSystem === "4.0" ? 4 : 100}
-              step={form.gpaSystem === "4.0" ? 0.1 : 1}
-              value={form.gpa}
-              onChange={(e) => set("gpa", e.target.value)}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#3D3DC4]"
-            />
-            <input
-              className={inputClass}
-              type="number"
-              min={0}
-              max={form.gpaSystem === "4.0" ? 4 : 100}
-              step={form.gpaSystem === "4.0" ? 0.1 : 1}
-              value={form.gpa}
-              onChange={(e) => set("gpa", e.target.value)}
-              placeholder={form.gpaSystem === "4.0" ? "3.5" : "85"}
-            />
+
+          <div className="h-px w-full bg-[#E5E7EB]"></div>
+
+          {/* IELTS Section */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-base font-semibold text-[#1A1A2E]">IELTS</span>
+              <label className="flex items-center gap-2 text-sm text-[#6B7280] font-medium cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.noIelts}
+                  onChange={() => set("noIelts", !form.noIelts)}
+                  className="w-4 h-4 rounded border-[#D1D5DB] text-[#2563EB] focus:ring-[#2563EB] accent-[#2563EB] cursor-pointer"
+                />
+                Hali topshirmaganman
+              </label>
+            </div>
+
+            <div className={`transition-opacity duration-300 ${form.noIelts ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+              <div className="flex justify-end mb-4">
+                <span className="bg-[#2563EB] text-white px-3 py-1 rounded-full text-sm font-bold shadow-sm">
+                  {form.ielts || "0.0"} / 9.0
+                </span>
+              </div>
+              <div className="relative pt-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={9.0}
+                  step={0.5}
+                  value={form.ielts || 0}
+                  onChange={(e) => set("ielts", e.target.value)}
+                  disabled={form.noIelts}
+                  className="w-full appearance-none h-2 rounded-full cursor-pointer custom-slider"
+                  style={{
+                    background: `linear-gradient(to right, #2563EB 0%, #2563EB ${ieltsPercent}%, #334155 ${ieltsPercent}%, #334155 100%)`
+                  }}
+                />
+                <div className="flex justify-between text-xs text-[#6B7280] mt-3 px-1 font-medium">
+                  <span>0.0</span>
+                  <span>4.5</span>
+                  <span>9.0</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* IELTS */}
-        <TestInput
-          label="IELTS"
-          value={form.ielts}
-          onChange={(v) => set("ielts", v)}
-          noTest={form.noIelts}
-          onToggle={() => set("noIelts", !form.noIelts)}
-          min={0}
-          max={9}
-          step={0.5}
-          placeholder="6.5"
-        />
-
-        {/* TOEFL */}
-        <TestInput
-          label="TOEFL"
-          value={form.toefl}
-          onChange={(v) => set("toefl", v)}
-          noTest={form.noToefl}
-          onToggle={() => set("noToefl", !form.noToefl)}
-          min={0}
-          max={120}
-          step={1}
-          placeholder="90"
-        />
-
-        {/* SAT */}
-        <TestInput
-          label="SAT"
-          value={form.sat}
-          onChange={(v) => set("sat", v)}
-          noTest={form.noSat}
-          onToggle={() => set("noSat", !form.noSat)}
-          min={400}
-          max={1600}
-          step={10}
-          placeholder="1200"
-        />
-
-        {/* GRE */}
-        <TestInput
-          label="GRE"
-          value={form.gre}
-          onChange={(v) => set("gre", v)}
-          noTest={form.noGre}
-          onToggle={() => set("noGre", !form.noGre)}
-          min={260}
-          max={340}
-          step={1}
-          placeholder="310"
-        />
-
-        {/* GMAT */}
-        <TestInput
-          label="GMAT"
-          value={form.gmat}
-          onChange={(v) => set("gmat", v)}
-          noTest={form.noGmat}
-          onToggle={() => set("noGmat", !form.noGmat)}
-          min={200}
-          max={800}
-          step={10}
-          placeholder="650"
-        />
-
-        {/* Language Level */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InputField label="Til darajasi">
-            <select
-              className={inputClass}
-              value={form.languageLevel}
-              onChange={(e) => set("languageLevel", e.target.value)}
-            >
-              <option value="">Tanlang</option>
-              {LANG_LEVELS.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </InputField>
-          <InputField label="Qaysi til?">
-            <select
-              className={inputClass}
-              value={form.languageType}
-              onChange={(e) => set("languageType", e.target.value)}
-            >
-              <option value="">Tanlang</option>
-              {LANG_TYPES.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </InputField>
-        </div>
-
-        <div className="flex items-start gap-3 bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl px-4 py-3">
-          <span className="text-lg">💡</span>
-          <p className="text-sm text-[#3D3DC4] font-medium">
-            Ko'proq ma'lumot = Ko'proq mos grantlar
-          </p>
-        </div>
+        <style>{`
+          .custom-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px #2563EB;
+            margin-top: -6px;
+          }
+          .custom-slider::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            background: transparent;
+          }
+          .custom-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px #2563EB;
+            border: none;
+          }
+          .custom-slider::-moz-range-track {
+            height: 8px;
+            border-radius: 4px;
+            background: transparent;
+          }
+        `}</style>
       </div>
-    </div>
-  );
+    );
+  };
 
   /* ─── STEP 4: Goals & Target Countries ─── */
   const Step4 = () => (
