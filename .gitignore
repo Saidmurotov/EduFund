@@ -1,12 +1,38 @@
+# Dependencies
 node_modules/
+server/node_modules/
+
+# Build output
 dist/
 .vite/
 
+# Environment variables (contain secrets)
 .env
 .env.local
 .env.*.local
-
-server/node_modules/
 server/.env
+
+# Firebase service account keys (SENSITIVE)
 server/serviceAccountKey.json
+**/serviceAccountKey*.json
+**/firebase-adminsdk*.json
+
+# Logs
+*.log
+server/output.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test artifacts
+coverage/
 

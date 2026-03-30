@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDG2u4PDV1t0c984spcrhtj7jSdeA6FS6k",
-  authDomain: "edufund-ai.firebaseapp.com",
-  projectId: "edufund-ai",
-  storageBucket: "edufund-ai.firebasestorage.app",
-  messagingSenderId: "286765347572",
-  appId: "1:286765347572:web:3fB6714f4d9833a11324a1",
-  measurementId: "G-WX8GWFRGMV"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
