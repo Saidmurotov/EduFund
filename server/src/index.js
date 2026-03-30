@@ -19,7 +19,12 @@ const PORT = process.env.PORT || 3001;
 // Start daily check job
 initNotificationJob();
 
-app.use(cors());
+// CORS: Produksion muhitda faqat o'zingizning frontend URL-ingizni kiriting
+app.use(cors({
+  origin: "*", // Produksiyada: "https://your-edufund-frontend.vercel.app"
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
