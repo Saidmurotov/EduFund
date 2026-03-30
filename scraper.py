@@ -6,6 +6,12 @@ import re
 import time
 import os
 import json
+import sys
+
+# Windows terminalda Unicode xatolarini oldini olish
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 # ==========================================
 # FIREBASE SOZLAMALARI (Yo'riqnoma):
@@ -15,7 +21,7 @@ import json
 # 4. JSON fayl nomini `serviceAccountKey.json` deb o'zgartiring va bevosita ushbu papkaga tashlang.
 # ==========================================
 
-print("🔥 Firebase'ga ulanish boshlanmoqda...")
+print("[FIRE] Firebase'ga ulanish boshlanmoqda...")
 try:
     # GitHub Actions orqali yuborilganda env variable dan o'qiymiz
     env_cred = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
@@ -28,9 +34,9 @@ try:
         
     firebase_admin.initialize_app(cred)
     db = firestore.client()
-    print("☑️ Firebase'ga muvaffaqiyatli ulandi.")
+    print("[OK] Firebase'ga muvaffaqiyatli ulandi.")
 except Exception as e:
-    print(f"❌ XATOLIK: Firebase ulanishida muammo.\nBatafsil: {e}")
+    print(f"[ERROR] XATOLIK: Firebase ulanishida muammo.\nBatafsil: {e}")
     exit(1)
 
 def get_existing_links():
@@ -88,65 +94,58 @@ def extract_deadline_and_category(url):
     return details
 
 def scrape_grantlar_uz():
-    URL = 'https://grantlar.uz/grant/'
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    URL = 'https://grantlar.uz/barcha-grantlar/'
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     
-    print(f"\n🌐 Saytdan ma'lumotlar yig'ilmoqda: {URL}")
+    print(f"\n[WEB] Saytdan ma'lumotlar yig'ilmoqda: {URL}")
     existing_links = get_existing_links()
     
     try:
-        response = requests.get(URL, headers=headers)
+        response = requests.get(URL, headers=headers, timeout=15)
         response.raise_for_status()
     except Exception as e:
-        print("❌ Saytga bog'lanishda xatolik:", e)
+        print("[ERROR] Saytga bog'lanishda xatolik:", e)
         return
 
     soup = BeautifulSoup(response.content, 'html.parser')
     
-    # Saytning grant kartalarini qidiramiz (class lari o'zgarishi mumkin, h3 dagi a teglar yig'iladi)
-    articles = soup.find_all('article')
-    if not articles:
-        # Alternativa sifatida a teglari orqali qidiramiz
-        articles = soup.find_all('div', class_=re.compile(r'post|card'))
-        
+    # Yangi mantiq: barcha H3 va H4 teglarini (ichida a bo'lgan) qidiramiz
+    # Bu uslub sayt strukturasi o'zgarsa ham ancha robust ishlaydi.
+    headings = soup.find_all(['h3', 'h4'])
     new_grants_count = 0
-    for article in articles:
-        title_tag = article.find('h3')
-        if not title_tag:
-            continue
-            
-        a_tag = title_tag.find('a')
+    for h in headings:
+        # Ba'zan <a> ichida <h3> bo'ladi, ba'zan teskarisi
+        a_tag = h.find('a') or h.find_parent('a')
         if not a_tag:
             continue
             
         title = a_tag.get_text(strip=True)
-        link = a_tag.get('href')
+        link = a_tag.get('href', '')
         
-        # Sanani oddiy matndan ajratib olamiz
-        date_element = article.find('time') or article.find('span', class_='date')
-        posted_date = date_element.get_text(strip=True) if date_element else ""
+        # Linkni tekshiramiz (grantlar.uz dan ekanligini va bo'sh emasligini)
+        if not link or 'grantlar.uz' not in link or '#' in link:
+            continue
 
         # Dublikat tekshiruvi!
         if link in existing_links:
-            print(f"⏩ Bazada mavjud (O'tkazildi): {title}")
             continue
             
-        print(f"⏳ Yangi topildi: {title}")
+        print(f"[NEW] Yangi topildi: {title}")
         print(f"  Ichki sahifa tahlil qilinmoqda...")
         
         # Batafsil sahifaga kirish va qo'shimcha ma'lumotlarni yig'ish
         details = extract_deadline_and_category(link)
-        time.sleep(1) # Saytni bloklab qo'ymasligi uchun pauza
+        time.sleep(1.5) # Saytni bloklab qo'ymasligi uchun pauza
         
         # Grant obyekti tuzamiz
         grant_data = {
             "title": title,
             "sourceUrl": link,
-            "postedDate": posted_date,
             "deadline": details["deadline"] or "Noma'lum",
             "category": details["category"],
             "min_gpa": details["min_gpa"],
-            "country": "Xalqaro", # Standart qiymat
+            "country": "Xalqaro",
+            "isPriority": False,
             "createdAt": firestore.SERVER_TIMESTAMP
         }
         
@@ -154,9 +153,9 @@ def scrape_grantlar_uz():
         db.collection('grants').add(grant_data)
         existing_links.add(link)
         new_grants_count += 1
-        print(f"  ✅ Saqlandi: Deadline - {grant_data['deadline']}, GPA - {grant_data['min_gpa']}")
+        print(f"  [OK] Saqlandi: {title[:30]}... | Deadline: {grant_data['deadline']}")
         
-    print(f"\n🎉 VAZIFA YAKUNLANDI! Dastur {new_grants_count} ta yangi grantni bazaga yukladi.")
+    print(f"\n[FINISH] VAZIFA YAKUNLANDI! Dastur {new_grants_count} ta yangi grantni bazaga yukladi.")
 
 if __name__ == "__main__":
     scrape_grantlar_uz()
