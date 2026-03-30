@@ -7,8 +7,8 @@ const db = admin.firestore();
 
 router.get("/stats", verifyToken, isAdmin, async (req, res) => {
     try {
-        const usersSnap = await db.collection("users").get();
-        const grantsSnap = await db.collection("opportunities").get();
+        const usersSnap = await db.collection("userProfiles").get();
+        const grantsSnap = await db.collection("grants").get();
 
         const users = usersSnap.docs.map(d => d.data());
         const totalUsers = users.length;

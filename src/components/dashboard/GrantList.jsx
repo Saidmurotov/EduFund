@@ -17,25 +17,26 @@ export default function GrantList({ grants }) {
   }
 
   return (
-    <div className="mt-2 space-y-6">
+    <div className="mt-[0.5rem] space-y-[1.5rem]">
       {/* Priority Section */}
       {priority.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-slate-50 flex items-center gap-2">
+          <div className="flex items-center justify-between mb-[0.75rem]">
+            <h3 className="text-lg font-bold text-slate-50 flex items-center gap-[0.5rem]">
               🌍 Your Target Countries
-              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium">
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-[0.5rem] py-[0.125rem] rounded-full font-medium">
                 {priority.length} ta
               </span>
             </h3>
           </div>
-          <div className="space-y-3">
+          <div className="flex flex-wrap gap-[0.75rem]">
             {priority.map((g) => (
-              <GrantCard
-                key={g.id || g.opportunityId}
-                grant={g}
-                matchPercent={g.matchPercent}
-              />
+              <div key={g.id || g.opportunityId} className="w-full xl:w-[calc(50%-0.375rem)]">
+                <GrantCard
+                  grant={g}
+                  matchPercent={g.matchPercent}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -43,7 +44,7 @@ export default function GrantList({ grants }) {
 
       {/* General Matches Section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-[0.75rem]">
           <h3 className="text-lg font-bold text-slate-50">
             {priority.length > 0 ? "More Matches For You" : "Best Matches For You"}
           </h3>
@@ -51,13 +52,14 @@ export default function GrantList({ grants }) {
             View all
           </Link>
         </div>
-        <div className="space-y-3">
+        <div className="flex flex-wrap gap-[0.75rem]">
           {others.map((g) => (
-            <GrantCard
-              key={g.id || g.opportunityId}
-              grant={g}
-              matchPercent={g.matchPercent}
-            />
+            <div key={g.id || g.opportunityId} className="w-full xl:w-[calc(50%-0.375rem)]">
+              <GrantCard
+                grant={g}
+                matchPercent={g.matchPercent}
+              />
+            </div>
           ))}
         </div>
       </div>

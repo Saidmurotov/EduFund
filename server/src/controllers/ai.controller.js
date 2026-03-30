@@ -62,7 +62,7 @@ export async function generateRoadmap(req, res) {
       });
     }
 
-    const userDoc = await db.collection("users").doc(userId).get();
+    const userDoc = await db.collection("userProfiles").doc(userId).get();
     const prefs = userDoc.exists ? userDoc.data()?.preferences || {} : {};
 
     const gpa = prefs.gpa ?? null;
@@ -70,21 +70,19 @@ export async function generateRoadmap(req, res) {
     const degree = prefs.degree ?? null;
     const field = prefs.field ?? null;
 
-    const months = monthDiff(Date.now(), targetGrant.deadline);
+    const todayStr = new Date().toISOString().split("T")[0];
 
     const prompt =
-      `Sen ta'lim maslahatchisi. Quyidagi talaba ma'lumotlari asosida ${targetGrant.title} granti uchun ${targetGrant.deadline} muddatgacha ${months} oylik tayyorgarlik rejasini JSON formatda yarat.\n\n` +
+      `Sen ta'lim va grantlar bo'yicha maslahatchisan. Quyidagi talaba ma'lumotlari asosida "${targetGrant.title}" granti uchun ${todayStr} dan boshlab ${targetGrant.deadline} muddatgacha tayyorgarlik rejasini (Roadmap) JSON formatda yarat.\n\n` +
       `Talaba: GPA: ${gpa}, IELTS: ${ielts}, Daraja: ${degree}, Soha: ${field}\n\n` +
-      `Format:\n` +
+      `Har bir qadam mantiqiy, ketma-ket va aniq sanalarga ega bo'lsin. Category turlari: 'exam' | 'document' | 'writing' | 'submission'.\n\n` +
+      `FORMAT:\n` +
       `{\n` +
       `  "steps": [\n` +
-      `    { "month": "1-2", "icon": "book", "title": "", "description": "", "status": "in_progress" },\n` +
-      `    { "month": "3", "icon": "calendar", "title": "", "description": "", "status": "upcoming" }\n` +
-      `  ],\n` +
-      `  "totalMonths": ${months},\n` +
-      `  "summary": ""\n` +
+      `    { "id": 1, "title": "Til imtihoni topshirish", "description": "IELTS/TOEFL ga tayyorgarlik...", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "category": "exam", "completed": false }\n` +
+      `  ]\n` +
       `}\n\n` +
-      `Faqat JSON qaytargin, boshqa matn yo'q.`;
+      `Faqat JSON qaytargin, boshqa matn umuman bo'lmasin.`;
 
     const { reply } = await askGemini(prompt, "");
     const jsonText = extractJson(reply);
@@ -100,7 +98,21 @@ export async function generateRoadmap(req, res) {
       return res.status(500).json({ message: "AI JSON parse qilib bo'lmadi." });
     }
 
-    return res.json(parsed);
+    const planData = {
+      grantTitle: targetGrant.title,
+      country: targetGrant.country || "Xalqaro",
+      deadline: targetGrant.deadline,
+      createdAt: new Date(),
+      steps: parsed.steps || [],
+    };
+
+    const docRef = await db
+      .collection("userCalendars")
+      .doc(userId)
+      .collection("plans")
+      .add(planData);
+
+    return res.json({ id: docRef.id, ...planData });
   } catch (error) {
     console.error("[generateRoadmap] Error:", error);
     return res

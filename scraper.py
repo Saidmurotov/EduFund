@@ -4,6 +4,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import re
 import time
+import os
+import json
 
 # ==========================================
 # FIREBASE SOZLAMALARI (Yo'riqnoma):
@@ -15,12 +17,20 @@ import time
 
 print("🔥 Firebase'ga ulanish boshlanmoqda...")
 try:
-    cred = credentials.Certificate('serviceAccountKey.json')
+    # GitHub Actions orqali yuborilganda env variable dan o'qiymiz
+    env_cred = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+    if env_cred:
+        cred_dict = json.loads(env_cred)
+        cred = credentials.Certificate(cred_dict)
+    else:
+        # Lokal muhit uchun fayldan o'qiymiz
+        cred = credentials.Certificate('serviceAccountKey.json')
+        
     firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("☑️ Firebase'ga muvaffaqiyatli ulandi.")
 except Exception as e:
-    print(f"❌ XATOLIK: Firebase ulanishida muammo. 'serviceAccountKey.json' ni tekshiring.\nBatafsil: {e}")
+    print(f"❌ XATOLIK: Firebase ulanishida muammo.\nBatafsil: {e}")
     exit(1)
 
 def get_existing_links():
@@ -78,7 +88,7 @@ def extract_deadline_and_category(url):
     return details
 
 def scrape_grantlar_uz():
-    URL = 'https://grantlar.uz/category/grantlar/'
+    URL = 'https://grantlar.uz/grant/'
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     
     print(f"\n🌐 Saytdan ma'lumotlar yig'ilmoqda: {URL}")

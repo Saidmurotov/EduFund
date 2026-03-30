@@ -11,7 +11,7 @@ async function verifyToken(req, res, next) {
 
     const decoded = await auth.verifyIdToken(token);
 
-    const userSnap = await db.collection("users").doc(decoded.uid).get();
+    const userSnap = await db.collection("userProfiles").doc(decoded.uid).get();
     const userData = userSnap.exists ? userSnap.data() : {};
 
     req.user = {

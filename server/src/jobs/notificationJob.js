@@ -15,7 +15,7 @@ export const initNotificationJob = () => {
             const sevenDaysLater = new Date();
             sevenDaysLater.setDate(now.getDate() + 7);
 
-            const usersSnap = await db.collection("users").get();
+            const usersSnap = await db.collection("userProfiles").get();
 
             for (const userDoc of usersSnap.docs) {
                 const userId = userDoc.id;

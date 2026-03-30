@@ -3,6 +3,6 @@
 @tailwind utilities;
 
 body {
-  @apply bg-background text-slate-100 antialiased;
+  @apply bg-background text-slate-100 antialiased overflow-x-hidden;
 }
 

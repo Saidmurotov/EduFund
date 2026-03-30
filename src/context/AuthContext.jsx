@@ -28,8 +28,18 @@ export const AuthProvider = ({ children }) => {
             if (userDoc.exists()) {
               setUser({ ...currentUser, ...userDoc.data() });
             } else {
-              // Agar user mavjud bo'lsa-yu Firestore da topilmasa (kamdan-kam uchraydi)
-              setUser(currentUser);
+              // Agar user mavjud bo'lsa-yu Firestore da topilmasa, uni avtomatik yaratib qo'yamiz
+              const defaultData = {
+                userId: currentUser.uid,
+                name: currentUser.displayName || 'EduFund Foydalanuvchi',
+                email: currentUser.email,
+                role: "student",
+                isPremium: false,
+                createdAt: serverTimestamp(),
+                preferences: {}
+              };
+              await setDoc(doc(db, "userProfiles", currentUser.uid), defaultData);
+              setUser({ ...currentUser, ...defaultData });
             }
           } catch (err) {
             console.error("Firestore user fetch error:", err);

@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
-import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
-import { Calendar as CalendarIcon, ChevronRight, CheckCircle2, Clock, MapPin } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronRight, CheckCircle2, Clock, MapPin, Trash2 } from "lucide-react";
 
 const CATEGORY_COLORS = {
     exam: "border-l-4 border-l-blue-500 bg-blue-500/5",
@@ -54,6 +54,17 @@ export default function GrantCalendar() {
             );
         } catch (e) {
             console.error(e);
+        }
+    };
+
+    const deletePlan = async (planId) => {
+        if (!user?.uid) return;
+        if (!window.confirm("Bu rejani haqiqatan ham o'chirishni istaysizmi?")) return;
+        try {
+            await deleteDoc(doc(db, "userCalendars", user.uid, "plans", planId));
+            setPlans((prev) => prev.filter((p) => p.id !== planId));
+        } catch (e) {
+            console.error("Rejani o'chirishda xatolik:", e);
         }
     };
 
@@ -111,9 +122,18 @@ export default function GrantCalendar() {
                                                 <MapPin size={14} /> {plan.country || "Xalqaro"}
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-bold text-[#3D3DC4]">{Math.round(progress)}%</div>
-                                            <div className="text-[10px] text-slate-500 uppercase tracking-wider">Progress</div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <button 
+                                              onClick={() => deletePlan(plan.id)}
+                                              className="text-slate-500 hover:text-rose-500 transition-colors p-1"
+                                              title="Rejani o'chirish"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <div className="text-right">
+                                                <div className="text-sm font-bold text-[#3D3DC4]">{Math.round(progress)}%</div>
+                                                <div className="text-[10px] text-slate-500 uppercase tracking-wider">Progress</div>
+                                            </div>
                                         </div>
                                     </div>
 

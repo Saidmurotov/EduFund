@@ -1,6 +1,6 @@
 import { db } from "../lib/firebase-admin.js";
 
-const COLLECTION = "opportunities";
+const COLLECTION = "grants";
 
 function asArray(value) {
   if (value == null) return [];
@@ -77,7 +77,7 @@ export async function getAllGrants(req, res) {
 
     // Since route is protected, req.user exists
     if (req.user?.uid) {
-      const userDoc = await db.collection("users").doc(req.user.uid).get();
+      const userDoc = await db.collection("userProfiles").doc(req.user.uid).get();
       const prefs = userDoc.exists ? userDoc.data()?.preferences : {};
       grants = grants.map((g) => ({ ...g, matchPercent: computeMatchPercent(prefs, g) }));
     }
@@ -118,7 +118,7 @@ export async function getMatchedGrantsForUser(req, res) {
   try {
     const { userId } = req.params;
 
-    const userDoc = await db.collection("users").doc(userId).get();
+    const userDoc = await db.collection("userProfiles").doc(userId).get();
     if (!userDoc.exists) {
       return res.status(404).json({ message: "Foydalanuvchi topilmadi." });
     }

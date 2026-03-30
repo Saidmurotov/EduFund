@@ -9,7 +9,7 @@ import { api, withAuth } from "../../lib/api.js";
 
 function StatCard({ title, value, Icon }) {
   return (
-    <Card className="bg-[#1E293B] border-[#334155] rounded-xl p-4">
+    <Card className="flex-1 min-w-[200px] bg-[#1E293B] border-[#334155] rounded-xl p-[1rem]">
       <div className="flex items-start justify-between">
         <div>
           <div className="text-xs text-[#64748B] font-semibold tracking-wide">
@@ -67,7 +67,7 @@ export default function StatCards() {
   }, [user?.uid, getIdToken]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="flex flex-wrap gap-[0.75rem]">
       <StatCard
         title="SAQLANGAN"
         value={`${savedCount} ta grant`}
