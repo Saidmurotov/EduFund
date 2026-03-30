@@ -29,7 +29,7 @@ export default function Profile() {
     async function load() {
       if (!user?.uid) return;
       try {
-        const uDoc = await getDoc(doc(db, "users", user.uid));
+        const uDoc = await getDoc(doc(db, "userProfiles", user.uid));
         const p = uDoc.data()?.preferences || {};
         setPref(p);
         setEditForm(p);
@@ -55,7 +55,7 @@ export default function Profile() {
   const handleSave = async () => {
     if (!user?.uid) return;
     try {
-      await updateDoc(doc(db, "users", user.uid), {
+      await updateDoc(doc(db, "userProfiles", user.uid), {
         preferences: editForm
       });
       setPref(editForm);

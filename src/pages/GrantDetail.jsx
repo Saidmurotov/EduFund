@@ -113,7 +113,7 @@ export default function GrantDetail() {
 
         // Fetch user preferences for real match analysis
         if (user?.uid && db) {
-          const userSnap = await getDoc(doc(db, "users", user.uid));
+          const userSnap = await getDoc(doc(db, "userProfiles", user.uid));
           if (userSnap.exists()) {
             setUserPrefs(userSnap.data()?.preferences || {});
           }

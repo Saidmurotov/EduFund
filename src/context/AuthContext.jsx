@@ -19,23 +19,47 @@ export const AuthProvider = ({ children }) => {
 
   // Auth holatini kuzatish
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // Firestore dan user ma'lumotlarini olish
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          setUser({ ...currentUser, ...userDoc.data() });
+    try {
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          try {
+            // Firestore dan user ma'lumotlarini olish
+            const userDoc = await getDoc(doc(db, "userProfiles", currentUser.uid));
+            if (userDoc.exists()) {
+              setUser({ ...currentUser, ...userDoc.data() });
+            } else {
+              // Agar user mavjud bo'lsa-yu Firestore da topilmasa (kamdan-kam uchraydi)
+              setUser(currentUser);
+            }
+          } catch (err) {
+            console.error("Firestore user fetch error:", err);
+            setUser(currentUser);
+          }
         } else {
-          // Agar user mavjud bo'lsa-yu Firestore da topilmasa (kamdan-kam uchraydi)
-          setUser(currentUser);
+          setUser(null);
         }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      }, (error) => {
+        console.error("Auth state change error:", error);
+        setLoading(false);
+      });
 
-    return () => unsubscribe();
+      // Firebase ulanmay qolsa, 5 soniyadan keyin baribir ekranni ochamiz
+      const timeout = setTimeout(() => {
+        if (loading) {
+          console.warn("Firebase Auth uzoq vaqt javob bermadi. Ilovani davom ettiramiz.");
+          setLoading(false);
+        }
+      }, 5000);
+
+      return () => {
+        unsubscribe();
+        clearTimeout(timeout);
+      };
+    } catch (err) {
+      console.error("Firebase auth ishga tushmadi. .env kalitlarini tekshiring:", err);
+      setLoading(false);
+    }
   }, []);
 
   // Google bilan kirish (Popup orqali)
@@ -49,7 +73,7 @@ export const AuthProvider = ({ children }) => {
       const googleUser = result.user;
 
       // Firestore da user mavjudligini tekshirish
-      const userRef = doc(db, "users", googleUser.uid);
+      const userRef = doc(db, "userProfiles", googleUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
@@ -91,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       };
 
       // Firestore da user yaratish
-      await setDoc(doc(db, "users", newUser.uid), userData);
+      await setDoc(doc(db, "userProfiles", newUser.uid), userData);
       setUser({ ...newUser, ...userData });
 
       return newUser;
@@ -130,7 +154,15 @@ export const AuthProvider = ({ children }) => {
         getIdToken,
       }}
     >
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+          <div className="text-white text-xl font-medium mb-2">Ilova yuklanmoqda... (Auth)</div>
+          <p className="text-gray-400 text-sm text-center max-w-md">Agar sahifa uzoq vaqt ochilmasa, .env faylida Firebase kalitlari to'g'ri ekanligini tekshiring.</p>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

@@ -221,7 +221,7 @@ export default function Onboarding() {
 
     setSaving(true);
     try {
-      const ref = doc(db, "users", user.uid);
+      const ref = doc(db, "userProfiles", user.uid);
       await setDoc(
         ref,
         {
