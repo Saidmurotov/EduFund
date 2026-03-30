@@ -3,7 +3,7 @@ import Card from "../ui/Card.jsx";
 import { Bookmark, Calendar } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
 import { db } from "../../lib/firebase.js";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { daysUntil } from "../../lib/utils.js";
 import { api, withAuth } from "../../lib/api.js";
 
@@ -36,27 +36,37 @@ export default function StatCards() {
       if (!user?.uid) return;
 
       try {
-        // Count saved grants
         if (db) {
-          const savedSnap = await getDocs(
-            collection(db, "savedGrants", user.uid, "items")
-          );
-          if (!alive) return;
-          setSavedCount(savedSnap.size || 0);
+          try {
+            const q = query(
+              collection(db, "savedGrants", user.uid, "items"),
+              where("userId", "==", user.uid)
+            );
+            const savedSnap = await getDocs(q);
+            if (!alive) return;
+            setSavedCount(savedSnap.size || 0);
+          } catch (e) {
+            console.error("Error fetching saved grants:", e);
+            if (alive) setSavedCount(0);
+          }
         }
 
         // Count upcoming deadlines (this week)
         const headers = await withAuth(getIdToken);
         const res = await api.get(`/grants/match/${user.uid}`, { headers });
         if (!alive) return;
-        const grants = Array.isArray(res.data) ? res.data : [];
-        const upcoming = grants.filter((g) => {
+        const grantsList = Array.isArray(res.data) ? res.data : [];
+        const upcoming = grantsList.filter((g) => {
           const days = daysUntil(g.deadline);
           return typeof days === "number" && days >= 0 && days <= 7;
         });
         setDeadlineCount(upcoming.length);
       } catch (e) {
-        console.error("[StatCards] load error:", e);
+        console.error("[StatCards] load error (Permissions or structure):", e);
+        if (alive) {
+          setSavedCount(0);
+          setDeadlineCount(0);
+        }
       }
     }
 

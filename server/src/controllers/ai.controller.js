@@ -99,6 +99,7 @@ export async function generateRoadmap(req, res) {
     }
 
     const planData = {
+      userId: userId, // Query filtr uchun qo'shildi
       grantTitle: targetGrant.title,
       country: targetGrant.country || "Xalqaro",
       deadline: targetGrant.deadline,

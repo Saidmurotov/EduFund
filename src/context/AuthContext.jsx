@@ -8,7 +8,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db, googleProvider } from "../lib/firebase.js";
 
 const AuthContext = createContext();
@@ -54,13 +54,15 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       });
 
-      // Firebase ulanmay qolsa, 5 soniyadan keyin baribir ekranni ochamiz
+      // Firebase ulanmay qolsa, 3 soniyadan keyin baribir ekranni ochamiz (Auth Timeout)
       const timeout = setTimeout(() => {
         if (loading) {
           console.warn("Firebase Auth uzoq vaqt javob bermadi. Ilovani davom ettiramiz.");
           setLoading(false);
+          // Fallback: Agar foydalanuvchi sekin bo'lsa ham dashboard ochilsin
+          if (!user) setUser(null); 
         }
-      }, 5000);
+      }, 3000);
 
       return () => {
         unsubscribe();

@@ -223,6 +223,7 @@ export default function GrantDetail() {
     try {
       const ref = doc(db, "savedGrants", user.uid, "items", String(grant.id || id));
       await setDoc(ref, {
+        userId: user.uid, // Query filtr uchun
         grantId: String(grant.id || id),
         savedAt: Date.now(),
         grantData: grant,

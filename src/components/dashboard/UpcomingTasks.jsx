@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
 import { db } from "../../lib/firebase.js";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import Card from "../ui/Card.jsx";
 import { Calendar, Clock } from "lucide-react";
 
@@ -16,9 +16,11 @@ export default function UpcomingTasks() {
     async function load() {
       if (!user?.uid) return;
       try {
-        const snap = await getDocs(
-          collection(db, "userCalendars", user.uid, "plans")
+        const q = query(
+          collection(db, "userCalendars", user.uid, "plans"),
+          where("userId", "==", user.uid)
         );
+        const snap = await getDocs(q);
         let allUncompleted = [];
         
         snap.forEach((doc) => {
@@ -45,6 +47,7 @@ export default function UpcomingTasks() {
         }
       } catch (e) {
         console.error("UpcomingTasks fetch error:", e);
+        if (alive) setTasks([]); // Xatolikda bo'sh array qaytaramiz
       } finally {
         if (alive) setLoading(false);
       }

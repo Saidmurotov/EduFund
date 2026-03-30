@@ -131,12 +131,12 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-300">O'rtacha match</span>
                   <span className="text-sm font-bold text-[#3D3DC4]">
-                    {grants.length
+                    {grants.length > 0
                       ? Math.round(
                         grants.reduce((a, g) => a + (g.matchPercent || 0), 0) /
                         grants.length
                       )
-                      : 0}
+                      : "0"}
                     %
                   </span>
                 </div>
