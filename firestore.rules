@@ -1,72 +1,30 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
+    // Foydalanuvchi tizimga kirganini tekshirish funksiyasi
+    function isSignedIn() { return request.auth != null; }
+
+    // Foydalanuvchi profillari
+    match /userProfiles/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
-    function isSelf(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    // Grantlar (Hamma o'qiy oladi)
+    match /grants/{grantId} {
+      allow read: if true;
+      allow write: if isSignedIn(); 
     }
 
-    // Admin check:
-    // - custom claim request.auth.token.admin == true, OR
-    // - userProfiles/{uid}.role == "admin"
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == "admin"
+    // Taqvim va Vazifalar (Upcoming Tasks uchun)
+    match /calendarEvents/{eventId} {
+      allow read, write: if isSignedIn() && (
+        resource == null || resource.data.userId == request.auth.uid
       );
     }
 
-    // 1) userProfiles/{userId}
-    match /userProfiles/{userId} {
-      allow read, write: if isSelf(userId);
-    }
-
-    // 2) grants (grantlar)
-    match /grants/{grantId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // 3) savedGrants/{userId}/items/{itemId}
-    match /savedGrants/{userId}/items/{itemId} {
-      allow read, write: if isSelf(userId);
-    }
-
-    // 4) notifications/{userId}/items/{itemId}
-    //    Faqat o'zi o'qiy oladi va isRead ni yangilay oladi
-    //    Yozish faqat admin yoki backend orqali (server-side)
-    match /notifications/{userId}/items/{itemId} {
-      allow read: if isSelf(userId);
-      allow update: if isSelf(userId);
-      allow create, delete: if isAdmin();
-    }
-
-    // 5) userCalendars/{userId}/plans/{planId}
-    //    Faqat o'zi o'qiy va yoza oladi
-    match /userCalendars/{userId}/plans/{planId} {
-      allow read, write: if isSelf(userId);
-    }
-
-    // 6) paymentIntents — foydalanuvchi yaratadi, admin o'qiydi
-    match /paymentIntents/{docId} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if isAdmin();
-    }
-
-    // 7) verificationLogs
-    match /verificationLogs/{logId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // 8) Default deny
+    // Boshqa barcha kolleksiyalarga umumiy xavfsiz ruxsat
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isSignedIn();
     }
   }
 }
-
