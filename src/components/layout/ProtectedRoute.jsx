@@ -1,4 +1,3 @@
-import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 
@@ -19,6 +18,11 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
   if (adminOnly && user.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Redirect to onboarding if not done, but don't loop if already on /onboarding
+  if (user.onboarded === false && window.location.pathname !== "/onboarding") {
+     return <Navigate to="/onboarding" replace />;
   }
 
   return children;

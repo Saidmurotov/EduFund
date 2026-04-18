@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
 import { useAuth } from "../hooks/useAuth.js";
@@ -17,6 +17,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
+  User,
+  UserRound,
 } from "lucide-react";
 
 /* ─── Constants ─── */
@@ -46,8 +48,12 @@ const EDUCATION_LEVELS = [
   { label: "PhD", value: "phd" },
 ];
 
-const LANG_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
-const LANG_TYPES = ["Ingliz", "Nemis", "Koreys", "Fransuz", "Boshqa"];
+// Unused constraints removed
+
+const GENDERS = [
+  { value: "male", label: "Erkak", Icon: User },
+  { value: "female", label: "Ayol", Icon: UserRound },
+];
 
 const GOALS = [
   { value: "full_grant", label: "Full Grant", Icon: Shield },
@@ -283,20 +289,22 @@ export default function Onboarding() {
 
         <InputField label="Jinsi">
           <div className="flex gap-3">
-            <Pill
-              active={form.gender === "male"}
-              onClick={() => set("gender", "male")}
-              className="flex-1"
-            >
-              Erkak
-            </Pill>
-            <Pill
-              active={form.gender === "female"}
-              onClick={() => set("gender", "female")}
-              className="flex-1"
-            >
-              Ayol
-            </Pill>
+            {GENDERS.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => set("gender", value)}
+                className={[
+                  "flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                  form.gender === value
+                    ? "border-[#3D3DC4] bg-[#3D3DC4]/5 text-[#3D3DC4]"
+                    : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]"
+                ].join(" ")}
+              >
+                <Icon size={24} />
+                <span className="text-sm font-bold">{label}</span>
+              </button>
+            ))}
           </div>
         </InputField>
 
@@ -649,32 +657,3 @@ export default function Onboarding() {
   );
 }
 
-/* ─── Test Input Component ─── */
-function TestInput({ label, value, onChange, noTest, onToggle, min, max, step, placeholder }) {
-  return (
-    <InputField label={label}>
-      <div className="flex gap-3 items-center">
-        <input
-          className={[inputClass, noTest ? "opacity-40" : ""].join(" ")}
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={noTest}
-        />
-      </div>
-      <label className="flex items-center gap-2 text-sm text-[#6B7280] mt-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={noTest}
-          onChange={onToggle}
-          className="accent-[#3D3DC4] h-4 w-4"
-        />
-        Hali topshirmaganman
-      </label>
-    </InputField>
-  );
-}

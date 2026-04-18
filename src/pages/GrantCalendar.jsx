@@ -5,7 +5,7 @@ import { db } from "../lib/firebase.js";
 import { collection, doc, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
-import { Calendar as CalendarIcon, ChevronRight, CheckCircle2, Clock, MapPin, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle2, Clock, MapPin, Trash2 } from "lucide-react";
 
 const CATEGORY_COLORS = {
     exam: "border-l-4 border-l-blue-500 bg-blue-500/5",

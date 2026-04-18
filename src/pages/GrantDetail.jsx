@@ -13,6 +13,11 @@ import { useToast } from "../context/ToastContext.jsx";
 import { countryFlag, initials } from "../lib/utils.js";
 import CalendarModal from "../components/calendar/CalendarModal.jsx";
 
+function asArray(val) {
+  if (val == null) return [];
+  return Array.isArray(val) ? val : [val];
+}
+
 function TrustBadge({ trustScore, verificationStatus }) {
   const score = typeof trustScore === "number" ? trustScore : 0;
   const status =
@@ -188,8 +193,9 @@ export default function GrantDetail() {
     }
 
     // Country check
-    if (Array.isArray(userPrefs.countries) && userPrefs.countries.length && grant.country) {
-      const match = userPrefs.countries.includes(grant.country);
+    const userCountries = asArray(userPrefs.targetCountries || userPrefs.countries);
+    if (userCountries.length && grant.country) {
+      const match = userCountries.includes(grant.country);
       checks.push({
         ok: match,
         label: match

@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Check, Flame, Star, Rocket, ShieldCheck, ChevronDown, ChevronUp, Zap, HelpCircle } from "lucide-react";
-import Card from "../components/ui/Card.jsx";
+import { Check, Star, Rocket, ShieldCheck, ChevronDown, ChevronUp, Zap, HelpCircle } from "lucide-react";
 import Button from "../components/ui/Button.jsx";
 import { useToast } from "../context/ToastContext.jsx";
 import { useAuth } from "../hooks/useAuth.js";

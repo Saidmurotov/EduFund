@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const CATEGORIES = {
   "Texnologiya": ["Computer Science", "IT & Software", "Engineering", "Data Science", "AI/ML", "Cybersecurity"],
@@ -35,7 +35,7 @@ export default function FieldSelector({ value, onChange }) {
     } else {
       setIsOther(false);
     }
-  }, [value]);
+  }, [value, otherValue]);
 
   const handleChipClick = (item) => {
     if (item === "Other") {

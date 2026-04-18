@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, X, Calendar, MapPin, Check } from "lucide-react";
+import { Bell, X, Calendar } from "lucide-react";
 import { useNotifications } from "../../context/NotificationContext.jsx";
 import { useNavigate } from "react-router-dom";
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/layout/ProtectedRoute.jsx";
 import Sidebar from "./components/layout/Sidebar.jsx";

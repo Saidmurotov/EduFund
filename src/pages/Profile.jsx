@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
-import { doc, getDoc, updateDoc, collection, getDocs, query, limit } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useToast } from "../context/ToastContext.jsx";

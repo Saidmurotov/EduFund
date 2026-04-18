@@ -8,22 +8,38 @@ function asArray(value) {
 }
 
 function norm(s) {
-  return String(s || "").trim().toLowerCase();
+  return String(s || "").trim().toLowerCase().replace(/\s+/g, '_');
 }
 
 const MATCH_CRITERIA = {
-  country: (p, g) => (Array.isArray(p.countries) && p.countries.includes(g.country)) || (Array.isArray(p.targetCountries) && p.targetCountries.includes(g.country)) ? 30 : 0,
-  degree: (p, g) => norm(p.degree) && Array.isArray(g.degree) && g.degree.map(norm).includes(norm(p.degree)) ? 25 : 0,
-  field: (p, g) => {
-    const userFields = Array.isArray(p.fields) ? p.fields.map(norm) : [];
-    const grantFields = Array.isArray(g.field) ? g.field.map(norm) : [];
-    if (userFields.length && grantFields.length) {
-      return grantFields.some(f => f === "all fields") || userFields.some(f => grantFields.includes(f)) ? 20 : 0;
-    }
-    return (userFields.length === 0 || grantFields.length === 0) ? 10 : 0;
+  country: (p, g) => {
+    const target = asArray(p.targetCountries || p.countries);
+    return target.length && target.includes(g.country) ? 30 : 0;
   },
-  gpa: (p, g) => (typeof p.gpa === "number" && typeof g.minGPA === "number" && p.gpa >= g.minGPA) ? 15 : 0,
-  ielts: (p, g) => (typeof p.ielts === "number" && typeof g.minIELTS === "number" && p.ielts >= g.minIELTS) ? 10 : 0,
+  degree: (p, g) => {
+    const userDeg = norm(p.degree);
+    const grantDegs = asArray(g.degree).map(norm);
+    return userDeg && grantDegs.includes(userDeg) ? 25 : 0;
+  },
+  field: (p, g) => {
+    const userFields = asArray(p.fields || p.field).map(norm);
+    const grantFields = asArray(g.field || g.fields).map(norm);
+    if (!userFields.length) return 0;
+    if (grantFields.includes("all fields") || grantFields.includes("all")) return 20;
+    return userFields.some(f => grantFields.includes(f)) ? 20 : 0;
+  },
+  gpa: (p, g) => {
+    const userGpa = typeof p.gpa === "number" ? p.gpa : parseFloat(p.gpa);
+    const minGpa = typeof g.minGPA === "number" ? g.minGPA : parseFloat(g.minGPA);
+    if (isNaN(userGpa) || isNaN(minGpa)) return 0;
+    return userGpa >= minGpa ? 15 : 0;
+  },
+  ielts: (p, g) => {
+    const userIelts = typeof p.ielts === "number" ? p.ielts : parseFloat(p.ielts);
+    const minIelts = typeof g.minIELTS === "number" ? g.minIELTS : parseFloat(g.minIELTS);
+    if (isNaN(userIelts) || isNaN(minIelts)) return 0;
+    return userIelts >= minIelts ? 10 : 0;
+  },
 };
 
 function computeMatchPercent(prefs, grant) {

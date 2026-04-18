@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import {
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -8,8 +8,8 @@ import {
   updateProfile,
   GoogleAuthProvider,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db, googleProvider } from "../lib/firebase.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../lib/firebase.js";
 
 const AuthContext = createContext();
 

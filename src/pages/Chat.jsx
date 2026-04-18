@@ -33,7 +33,7 @@ function setLimitState(state) {
 }
 
 export default function Chat() {
-  const { user, getIdToken } = useAuth();
+  const { user } = useAuth();
   const toast = useToast();
 
   const [messages, setMessages] = useState(() => [

@@ -14,7 +14,7 @@ import {
 const COLORS = ["#3D3DC4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
 export default function AdminStats() {
-    const { user, getIdToken } = useAuth();
+    const { getIdToken } = useAuth();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -45,7 +45,7 @@ export default function AdminStats() {
     if (!stats) return <div className="p-10 text-center text-slate-400">Ruxsat yo'q yoki xato.</div>;
 
     const pieData = [
-        { name: "Erkakлар", value: stats.male },
+        { name: "Erkaklar", value: stats.male },
         { name: "Ayollar", value: stats.female },
     ];
 

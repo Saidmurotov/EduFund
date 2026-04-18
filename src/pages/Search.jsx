@@ -30,7 +30,7 @@ function Chip({ label, active, onClick }) {
 }
 
 /* ── Filter Panel (shared between desktop sidebar and mobile overlay) ── */
-function FilterPanel({ filters, setFilters, toggleFilter, clearFilters, onClose }) {
+function FilterPanel({ filters, setFilters, toggleFilter, clearFilters, _onClose }) {
   return (
     <div className="space-y-8">
       {/* My Match Toggle */}

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useToast } from "../context/ToastContext.jsx";
-import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
   const { user, registerWithEmail, loginWithGoogle } = useAuth();
@@ -16,7 +16,6 @@ export default function Register() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Agar user allaqachon login bo'lsa (Google redirect qaytganda)
   useEffect(() => {

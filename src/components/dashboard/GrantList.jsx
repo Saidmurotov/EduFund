@@ -3,7 +3,7 @@ import GrantCard from "./GrantCard.jsx";
 import { useMemo } from "react";
 
 export default function GrantList({ grants }) {
-  const gList = grants || [];
+  const gList = useMemo(() => grants || [], [grants]);
 
   const priority = useMemo(() => gList.filter((g) => g.isPriority), [gList]);
   const others = useMemo(() => gList.filter((g) => !g.isPriority), [gList]);
