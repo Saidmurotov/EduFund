@@ -10,39 +10,70 @@ import { api, withAuth } from "../lib/api.js";
 export default function Dashboard() {
   const { user, getIdToken } = useAuth();
   const [grants, setGrants] = useState([]);
+  const [totalDbCount, setTotalDbCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showRetry, setShowRetry] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let alive = true;
+    let timer;
     async function load() {
       if (!user?.uid) return;
       setLoading(true);
       setError("");
+      setShowRetry(false);
+      
+      timer = setTimeout(() => {
+        if (loading && alive) {
+          setShowRetry(true);
+        }
+      }, 5000);
       try {
         const headers = await withAuth(getIdToken);
-        const res = await api.get(`/grants/match/${user.uid}`, {
-          params: { limit: 20 },
+        const res = await api.get("/grants", {
           headers,
+          params: { sort: "match" },
         });
+        const loadedGrants = Array.isArray(res.data) ? res.data : [];
 
         if (!alive) return;
-        setGrants(Array.isArray(res.data) ? res.data : []);
+        setGrants(loadedGrants);
+        setTotalDbCount(loadedGrants.length);
       } catch (e) {
-        console.error("Grantlarni yuklashda xato:", e);
+        console.error("Grantlarni API orqali yuklashda xato:", e);
         if (!alive) return;
         setError("Grantlarni yuklashda xato yuz berdi. Iltimos qaytadan urinib ko'ring yoki .env sozlamalarini tekshiring.");
       } finally {
         if (alive) setLoading(false);
+        if (timer) clearTimeout(timer);
       }
     }
     load();
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
   }, [user?.uid, getIdToken]);
 
-  if (loading) return <SkeletonDashboard />;
+  if (loading) {
+    if (showRetry) {
+      return (
+        <div className="min-h-[400px] flex flex-col items-center justify-center p-8 bg-[#1E293B] border border-[#334155] rounded-3xl text-center">
+          <span className="text-4xl mb-4">⏳</span>
+          <h3 className="text-xl font-bold text-slate-100 mb-2">Yuklash juda uzoq davom etmoqda</h3>
+          <p className="text-slate-400 text-sm mb-6 max-w-xs">Internet aloqangizni tekshiring yoki qayta urinib ko'ring.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-8 py-3 bg-[#3D3DC4] text-white rounded-xl font-bold hover:bg-[#3232a8] transition-all"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      );
+    }
+    return <SkeletonDashboard />;
+  }
 
   return (
     <div className="space-y-[1.5rem]">
@@ -50,7 +81,7 @@ export default function Dashboard() {
       <GreetingHeader name={user?.name || user?.email} count={grants.length} />
 
       {/* Stats — wide grid on desktop */}
-      <StatCards />
+      <StatCards totalGrants={totalDbCount} />
 
       {/* Error */}
       {error ? (
@@ -83,7 +114,7 @@ export default function Dashboard() {
                   <span className="text-sm font-bold text-slate-50">{grants.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">Maqsad davlat grantlari</span>
+                  <span className="text-sm text-slate-300">Priority grantlar</span>
                   <span className="text-sm font-bold text-emerald-400">
                     {grants.filter((g) => g.isPriority).length}
                   </span>

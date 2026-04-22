@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth.js";
-import { db } from "../../lib/firebase.js";
+import { db, auth } from "../../lib/firebase.js";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import Card from "../ui/Card.jsx";
 import { Calendar, Clock } from "lucide-react";
@@ -14,11 +14,22 @@ export default function UpcomingTasks() {
   useEffect(() => {
     let alive = true;
     async function load() {
-      if (!user?.uid) return;
+      const currentUser = auth.currentUser;
+      if (!currentUser?.uid) {
+        if (alive) setLoading(false);
+        return;
+      }
+      
+      let timer = setTimeout(() => {
+        if (loading && alive) {
+          console.warn("UpcomingTasks loading timeout");
+        }
+      }, 5000);
+
       try {
         const q = query(
-          collection(db, "userCalendars", user.uid, "plans"),
-          where("userId", "==", user.uid)
+          collection(db, "userCalendars", currentUser.uid, "plans"),
+          where("userId", "==", currentUser.uid)
         );
         const snap = await getDocs(q);
         let allUncompleted = [];

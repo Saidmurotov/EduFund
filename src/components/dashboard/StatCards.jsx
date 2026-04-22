@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Card from "../ui/Card.jsx";
-import { Bookmark, Calendar } from "lucide-react";
+import { Bookmark, Calendar, Database } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth.js";
-import { db } from "../../lib/firebase.js";
+import { db, auth } from "../../lib/firebase.js";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { daysUntil } from "../../lib/utils.js";
 import { api, withAuth } from "../../lib/api.js";
@@ -25,7 +25,7 @@ function StatCard({ title, value, Icon }) {
   );
 }
 
-export default function StatCards() {
+export default function StatCards({ totalGrants = 0 }) {
   const { user, getIdToken } = useAuth();
   const [savedCount, setSavedCount] = useState(0);
   const [deadlineCount, setDeadlineCount] = useState(0);
@@ -33,14 +33,15 @@ export default function StatCards() {
   useEffect(() => {
     let alive = true;
     async function load() {
-      if (!user?.uid) return;
+      const currentUser = auth.currentUser;
+      if (!currentUser?.uid) return;
 
       try {
         if (db) {
           try {
             const q = query(
-              collection(db, "savedGrants", user.uid, "items"),
-              where("userId", "==", user.uid)
+              collection(db, "savedGrants", currentUser.uid, "items"),
+              where("userId", "==", currentUser.uid)
             );
             const savedSnap = await getDocs(q);
             if (!alive) return;
@@ -53,10 +54,7 @@ export default function StatCards() {
 
         // Count upcoming deadlines (this week)
         const headers = await withAuth(getIdToken);
-        const res = await api.get(`/grants/match/${user.uid}`, {
-          params: { limit: 100 },
-          headers,
-        });
+        const res = await api.get(`/grants/match/${currentUser.uid}`, { headers });
         if (!alive) return;
         const grantsList = Array.isArray(res.data) ? res.data : [];
         const upcoming = grantsList.filter((g) => {
@@ -81,6 +79,11 @@ export default function StatCards() {
 
   return (
     <div className="flex flex-wrap gap-[0.75rem]">
+      <StatCard
+        title="JAMI GRANTLAR"
+        value={`${totalGrants} ta bazada`}
+        Icon={Database}
+      />
       <StatCard
         title="SAQLANGAN"
         value={`${savedCount} ta grant`}

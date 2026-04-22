@@ -45,17 +45,15 @@ export default function Login() {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      // signInWithRedirect: sahifa Google ga yo'naltiriladi, qaytganda
-      // useEffect user ni sezib /dashboard ga o'tadi
+      // signInWithRedirect: sahifa Google ga yo'naltiriladi.
+      // Qaytib kelganda AuthContext dagi onAuthStateChanged user ni aniqlaydi.
     } catch (err) {
       console.error(err);
       const code = err?.code || "";
       if (code === "auth/popup-blocked") {
-        setError("Popup bloklandi. Brauzer sozlamalarini tekshiring.");
-      } else if (code === "auth/unauthorized-domain") {
-        setError("Firebase Console → Auth → Authorized domains ga 'localhost' qo'shing.");
+        setError("Habar: Popup bloklandi yoki redirect muammosi. Brauzerni tekshiring.");
       } else {
-        setError("Google bilan kirishda xato: " + (err?.message || code));
+        setError("Google bilan bog'lanishda xato: " + (err?.message || code));
       }
       setGoogleLoading(false);
     }
