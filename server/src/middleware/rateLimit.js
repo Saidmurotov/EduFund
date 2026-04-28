@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 const freeLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
+  keyGenerator: (req) => req.user?.uid || req.ip,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Free user uchun 1 daqiqada 5 ta so'rov limiti." },
@@ -11,6 +12,7 @@ const freeLimiter = rateLimit({
 const premiumLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 100,
+  keyGenerator: (req) => req.user?.uid || req.ip,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Premium user uchun limit oshib ketdi." },

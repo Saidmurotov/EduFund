@@ -1,84 +1,110 @@
 import cron from "node-cron";
 import admin from "firebase-admin";
+import { db } from "../lib/firebase-admin.js";
 
-const db = admin.firestore();
+const MAX_NOTIFICATION_USERS_SCAN = Number(process.env.MAX_NOTIFICATION_USERS_SCAN || 5000);
+
+export async function runNotificationCheck(now = new Date()) {
+  const threeDaysLater = new Date(now);
+  threeDaysLater.setDate(now.getDate() + 3);
+
+  const sevenDaysLater = new Date(now);
+  sevenDaysLater.setDate(now.getDate() + 7);
+
+  const usersSnap = await db.collection("userProfiles").limit(MAX_NOTIFICATION_USERS_SCAN).get();
+  let created = 0;
+
+  for (const userDoc of usersSnap.docs) {
+    const userId = userDoc.id;
+
+    const plansSnap = await db.collection("userCalendars").doc(userId).collection("plans").get();
+    for (const planDoc of plansSnap.docs) {
+      const plan = planDoc.data();
+      if (!Array.isArray(plan.steps)) continue;
+
+      for (const step of plan.steps) {
+        if (step.completed) continue;
+
+        const endDate = new Date(step.endDate);
+        if (Number.isNaN(endDate.getTime())) continue;
+
+        if (isSameDay(endDate, threeDaysLater)) {
+          created += await createNotification(userId, {
+            type: "deadline_reminder",
+            title: "Deadline yaqinlashdi!",
+            body: `"${step.title}" bosqichi uchun 3 kun vaqt qoldi.`,
+            grantId: plan.grantId,
+            stepId: step.id,
+          });
+        }
+      }
+    }
+
+    const savedSnap = await db.collection("savedGrants").doc(userId).collection("items").get();
+    for (const savedDoc of savedSnap.docs) {
+      const savedGrant = savedDoc.data();
+      const grant = savedGrant.grantData || savedGrant;
+      if (!grant.deadline) continue;
+
+      const deadlineDate = new Date(grant.deadline);
+      if (Number.isNaN(deadlineDate.getTime())) continue;
+
+      if (isSameDay(deadlineDate, sevenDaysLater)) {
+        created += await createNotification(userId, {
+          type: "grant_deadline",
+          title: "Grant muddati yaqinlashmoqda",
+          body: `"${grant.title}" ariza topshirish muddatiga 7 kun qoldi.`,
+          grantId: grant.id || savedDoc.id,
+        });
+      }
+    }
+  }
+
+  return { checkedUsers: usersSnap.size, created };
+}
 
 export const initNotificationJob = () => {
-    // Har kuni soat 09:00 da ishlaydi
-    cron.schedule("0 9 * * *", async () => {
-        console.log("[NotificationJob] Starting daily check...");
-        try {
-            const now = new Date();
-            const threeDaysLater = new Date();
-            threeDaysLater.setDate(now.getDate() + 3);
+  if (process.env.ENABLE_EMBEDDED_CRON !== "true") {
+    console.log("[NotificationJob] Embedded cron disabled. Use /api/jobs/notifications/daily.");
+    return null;
+  }
 
-            const sevenDaysLater = new Date();
-            sevenDaysLater.setDate(now.getDate() + 7);
-
-            const usersSnap = await db.collection("userProfiles").get();
-
-            for (const userDoc of usersSnap.docs) {
-                const userId = userDoc.id;
-
-                // 1. Check Calendar Plans
-                const plansSnap = await db.collection("userCalendars").doc(userId).collection("plans").get();
-                for (const planDoc of plansSnap.docs) {
-                    const plan = planDoc.data();
-                    if (!plan.steps) continue;
-
-                    for (const step of plan.steps) {
-                        if (step.completed) continue;
-
-                        const endDate = new Date(step.endDate);
-                        // If deadline is in 3 days
-                        if (isSameDay(endDate, threeDaysLater)) {
-                            await createNotification(userId, {
-                                type: 'deadline_reminder',
-                                title: '⏰ Deadline yaqinlashdi!',
-                                body: `"${step.title}" bosqichi uchun 3 kun vaqt qoldi.`,
-                                grantId: plan.grantId,
-                                stepId: step.id
-                            });
-                        }
-                    }
-                }
-
-                // 2. Check Saved Grants
-                const savedSnap = await db.collection("savedGrants").doc(userId).collection("items").get();
-                for (const savedDoc of savedSnap.docs) {
-                    const grant = savedDoc.data();
-                    if (!grant.deadline) continue;
-
-                    const deadlineDate = new Date(grant.deadline);
-                    if (isSameDay(deadlineDate, sevenDaysLater)) {
-                        await createNotification(userId, {
-                            type: 'grant_deadline',
-                            title: '📅 Grant muddati yaqinlashmoqda',
-                            body: `"${grant.title}" ariza topshirish muddatiga 7 kun qoldi.`,
-                            grantId: grant.id || savedDoc.id
-                        });
-                    }
-                }
-            }
-            console.log("[NotificationJob] Finished.");
-        } catch (error) {
-            console.error("[NotificationJob] Error:", error);
-        }
-    });
+  return cron.schedule("0 9 * * *", async () => {
+    console.log("[NotificationJob] Starting daily check...");
+    try {
+      const result = await runNotificationCheck();
+      console.log("[NotificationJob] Finished.", result);
+    } catch (error) {
+      console.error("[NotificationJob] Error:", error);
+    }
+  }, { timezone: process.env.NOTIFICATION_TIMEZONE || "Asia/Tashkent" });
 };
 
 async function createNotification(userId, data) {
-    const notifRef = db.collection("notifications").doc(userId).collection("items").doc();
-    await notifRef.set({
-        ...data,
-        id: notifRef.id,
-        isRead: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+  const today = new Date().toISOString().slice(0, 10);
+  const dedupeKey = [
+    today,
+    data.type || "notification",
+    data.grantId || "grant",
+    data.stepId || "step",
+  ].join("_").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 180);
+
+  const notifRef = db.collection("notifications").doc(userId).collection("items").doc(dedupeKey);
+  const existing = await notifRef.get();
+  if (existing.exists) return 0;
+
+  await notifRef.set({
+    ...data,
+    id: notifRef.id,
+    isRead: false,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return 1;
 }
 
 function isSameDay(d1, d2) {
-    return d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate();
+  return d1.getFullYear() === d2.getFullYear()
+    && d1.getMonth() === d2.getMonth()
+    && d1.getDate() === d2.getDate();
 }

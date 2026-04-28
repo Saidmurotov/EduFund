@@ -1,7 +1,5 @@
-import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-dotenv.config();
+import "./env.js";
 
 const apiKey = process.env.GOOGLE_API_KEY;
 if (!apiKey) {
@@ -19,12 +17,15 @@ export async function askGemini(prompt, systemPrompt) {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const model = genAI.getGenerativeModel({
+      model: MODEL_NAME,
+      systemInstruction: systemPrompt || undefined,
+    });
     const result = await model.generateContent({
       contents: [
         {
           role: "user",
-          parts: [{ text: systemPrompt || "" }, { text: "\n\n" + prompt }],
+          parts: [{ text: prompt }],
         },
       ],
     });

@@ -1,22 +1,29 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/layout/ProtectedRoute.jsx";
 import Sidebar from "./components/layout/Sidebar.jsx";
 import BottomNav from "./components/layout/BottomNav.jsx";
 
 // Pages
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import Onboarding from "./pages/Onboarding.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
-import Search from "./pages/Search.jsx";
-import Chat from "./pages/Chat.jsx";
-import GrantDetail from "./pages/GrantDetail.jsx";
-import Roadmap from "./pages/Roadmap.jsx";
-import Saved from "./pages/Saved.jsx";
-import Profile from "./pages/Profile.jsx";
-import GrantCalendar from "./pages/GrantCalendar.jsx";
-import AdminStats from "./pages/AdminStats.jsx";
-import Premium from "./pages/Premium.jsx";
+const Login = lazy(() => import("./pages/Login.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
+const Onboarding = lazy(() => import("./pages/Onboarding.jsx"));
+const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
+const Search = lazy(() => import("./pages/Search.jsx"));
+const Chat = lazy(() => import("./pages/Chat.jsx"));
+const GrantDetail = lazy(() => import("./pages/GrantDetail.jsx"));
+const Roadmap = lazy(() => import("./pages/Roadmap.jsx"));
+const Saved = lazy(() => import("./pages/Saved.jsx"));
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+const GrantCalendar = lazy(() => import("./pages/GrantCalendar.jsx"));
+const AdminStats = lazy(() => import("./pages/AdminStats.jsx"));
+const Premium = lazy(() => import("./pages/Premium.jsx"));
+
+const PageFallback = () => (
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+    <div className="h-10 w-10 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+  </div>
+);
 
 const PublicLayout = ({ children }) => {
   return <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">{children}</div>;
@@ -47,7 +54,8 @@ const PrivateLayout = ({ children }) => {
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
       {/* ── Public (no sidebar, no bottom nav) ── */}
       <Route path="/login" element={<PublicLayout><Login /></PublicLayout>} />
       <Route path="/register" element={<PublicLayout><Register /></PublicLayout>} />
@@ -88,6 +96,7 @@ export default function App() {
       {/* ── Redirects ── */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

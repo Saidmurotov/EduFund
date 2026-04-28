@@ -16,9 +16,9 @@ const FEATURES = [
 ];
 
 const FAQS = [
-    { q: "To'lov qanday amalga oshiriladi?", a: "Hozircha Payme va Click integratsiya qilinmoqda. To'lov tasdiqlangandan so'ng premium darhol faollashadi." },
-    { q: "Bekor qilsam pul qaytariladi?", a: "Ha, 7 kun ichida to'liq pulingizni qaytarib olishingiz mumkin." },
-    { q: "Qachon premium faollashadi?", a: "To'lov amalga oshirilgandan so'ng 1-5 daqiqa ichida barcha funksiyalar ochiladi." }
+    { q: "To'lov qanday amalga oshiriladi?", a: "Hozircha bu sahifa operator bilan bog'lanish so'rovini qoldiradi. Payme/Click integratsiyasi qo'shilgandan keyin to'lov ilova ichida tasdiqlanadi." },
+    { q: "Bekor qilsam pul qaytariladi?", a: "To'lov tizimi ishga tushgach qaytarish shartlari alohida ko'rsatiladi." },
+    { q: "Qachon premium faollashadi?", a: "Hozir premium faollashtirish qo'lda tekshiriladi. Avtomatik faollashish payment webhook qo'shilgandan keyin ishlaydi." }
 ];
 
 export default function Premium() {
@@ -36,13 +36,14 @@ export default function Premium() {
                 email: user.email,
                 plan: planType,
                 status: "pending",
+                provider: "manual",
                 createdAt: new Date().toISOString()
             });
 
-            alert("Tez kunda! Payme/Click integratsiya qilinmoqda. Hozircha bu xususiyat sinov rejimida.");
-            toast?.showToast?.("Operatorlarimiz siz bilan bog'lanishadi!", "info");
+            toast?.showToast?.("So'rovingiz qabul qilindi. Operatorlar bog'lanishadi.", "info");
         } catch (e) {
             console.error(e);
+            toast?.showToast?.("So'rovni yuborishda xato yuz berdi.", "error");
         }
     };
 
@@ -100,7 +101,7 @@ export default function Premium() {
                         variant={selectedPlan === "monthly" ? "primary" : "outline"}
                         className="w-full py-4 rounded-2xl text-sm font-bold shadow-xl"
                     >
-                        Boshlash
+                        So'rov qoldirish
                     </Button>
                 </div>
 
@@ -146,7 +147,7 @@ export default function Premium() {
                         onClick={() => handleSubscribe("yearly")}
                         className="w-full py-4 rounded-2xl text-sm font-bold bg-[#3D3DC4] hover:bg-[#3232a8] text-white shadow-xl shadow-[#3D3DC4]/30"
                     >
-                        Premium'ni faollashtirish
+                        So'rov qoldirish
                     </Button>
                 </div>
             </div>
@@ -155,11 +156,11 @@ export default function Premium() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8 py-4 px-8 border-y border-[#334155]/30">
                 <div className="flex flex-col items-center gap-2 text-center text-slate-500">
                     <ShieldCheck size={24} />
-                    <div className="text-[10px] uppercase font-bold tracking-widest">Xavfsiz to'lov</div>
+                    <div className="text-[10px] uppercase font-bold tracking-widest">Operator tekshiruvi</div>
                 </div>
                 <div className="flex flex-col items-center gap-2 text-center text-slate-500">
                     <Zap size={24} />
-                    <div className="text-[10px] uppercase font-bold tracking-widest">Tezkor faollashish</div>
+                    <div className="text-[10px] uppercase font-bold tracking-widest">Qo'lda faollashtirish</div>
                 </div>
                 <div className="flex flex-col items-center gap-2 text-center text-slate-500 hidden md:flex">
                     <HelpCircle size={24} />

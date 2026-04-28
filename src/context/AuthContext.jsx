@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   // Auth holatini kuzatish
   useEffect(() => {
     try {
+      let authResolved = false;
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
           try {
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
                 email: currentUser.email,
                 role: "student",
                 isPremium: false,
+                onboarded: false,
                 createdAt: serverTimestamp(),
                 preferences: {}
               };
@@ -48,19 +50,20 @@ export const AuthProvider = ({ children }) => {
         } else {
           setUser(null);
         }
+        authResolved = true;
         setLoading(false);
       }, (error) => {
         console.error("Auth state change error:", error);
+        authResolved = true;
         setLoading(false);
       });
 
       // Firebase ulanmay qolsa, 3 soniyadan keyin baribir ekranni ochamiz (Auth Timeout)
       const timeout = setTimeout(() => {
-        if (loading) {
+        if (!authResolved) {
           console.warn("Firebase Auth uzoq vaqt javob bermadi. Ilovani davom ettiramiz.");
           setLoading(false);
-          // Fallback: Agar foydalanuvchi sekin bo'lsa ham dashboard ochilsin
-          if (!user) setUser(null); 
+          setUser(null);
         }
       }, 3000);
 
@@ -95,6 +98,7 @@ export const AuthProvider = ({ children }) => {
           email: googleUser.email,
           role: "student",
           isPremium: false,
+          onboarded: false,
           createdAt: serverTimestamp(),
           preferences: {},
         };
@@ -122,6 +126,7 @@ export const AuthProvider = ({ children }) => {
         email: email,
         role: "student",
         isPremium: false,
+        onboarded: false,
         createdAt: serverTimestamp(),
         preferences: {},
       };

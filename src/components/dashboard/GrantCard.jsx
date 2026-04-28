@@ -9,10 +9,11 @@ import { daysUntil } from "../../lib/utils.js";
 function typeBadge(type, fundingType) {
   const t = String(type || fundingType || "").toLowerCase();
   const map = {
-    conference: { label: "🏆 Conference", cls: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40" },
-    research: { label: "🔬 Research", cls: "bg-teal-600/20 text-teal-300 border border-teal-500/40" },
-    stajirovka: { label: "📋 Stajirovka", cls: "bg-orange-500/20 text-orange-300 border border-orange-500/40" },
-    language_program: { label: "🌐 Language", cls: "bg-violet-500/20 text-violet-300 border border-violet-500/40" },
+    conference: { label: "Conference", cls: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/40" },
+    research: { label: "Research", cls: "bg-teal-600/20 text-teal-300 border border-teal-500/40" },
+    stajirovka: { label: "Stajirovka", cls: "bg-orange-500/20 text-orange-300 border border-orange-500/40" },
+    internship: { label: "Internship", cls: "bg-orange-500/20 text-orange-300 border border-orange-500/40" },
+    language_program: { label: "Language", cls: "bg-violet-500/20 text-violet-300 border border-violet-500/40" },
   };
   return map[t] || null;
 }
@@ -20,16 +21,9 @@ function typeBadge(type, fundingType) {
 export default function GrantCard({ grant, matchPercent }) {
   const navigate = useNavigate();
 
-  const mp =
-    typeof matchPercent === "number" ? matchPercent : grant?.matchPercent;
-  const deadlineDays = useMemo(
-    () => daysUntil(grant?.deadline),
-    [grant?.deadline]
-  );
-
-  const urgent =
-    typeof deadlineDays === "number" && deadlineDays >= 0 && deadlineDays < 3;
-
+  const mp = typeof matchPercent === "number" ? matchPercent : grant?.matchPercent;
+  const deadlineDays = useMemo(() => daysUntil(grant?.deadline), [grant?.deadline]);
+  const urgent = typeof deadlineDays === "number" && deadlineDays >= 0 && deadlineDays < 3;
   const extraBadge = typeBadge(grant?.type, grant?.fundingType);
 
   return (
@@ -43,7 +37,7 @@ export default function GrantCard({ grant, matchPercent }) {
             {grant?.title || "Grant"}
           </div>
           <div className="text-sm text-[#64748B] mt-1 truncate">
-            {grant?.country || "-"} • {grant?.organization || "-"}
+            {grant?.country || "-"} / {grant?.organization || "-"}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -52,7 +46,7 @@ export default function GrantCard({ grant, matchPercent }) {
           </div>
           {grant?.isPriority && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
-              🎯 Priority
+              Maqsad davlat
             </span>
           )}
         </div>
@@ -71,9 +65,9 @@ export default function GrantCard({ grant, matchPercent }) {
             {Array.isArray(grant.degree) ? grant.degree.join(", ") : grant.degree}
           </Badge>
         )}
-        {grant?.field && (
+        {(grant?.field || grant?.category) && (
           <Badge variant="outline">
-            {Array.isArray(grant.field) ? grant.field[0] : grant.field}
+            {Array.isArray(grant.field) ? grant.field[0] : grant.field || grant.category}
           </Badge>
         )}
       </div>
@@ -83,10 +77,10 @@ export default function GrantCard({ grant, matchPercent }) {
           {typeof deadlineDays === "number" ? (
             urgent ? (
               <span className="text-[#EF4444] font-medium">
-                ⚠️ Deadline in {deadlineDays} days
+                Deadline {deadlineDays} kun ichida
               </span>
             ) : (
-              <span className="text-[#64748B]">Deadline in {deadlineDays} days</span>
+              <span className="text-[#64748B]">Deadline {deadlineDays} kun ichida</span>
             )
           ) : (
             <span className="text-[#64748B]">Deadline: -</span>
@@ -101,7 +95,7 @@ export default function GrantCard({ grant, matchPercent }) {
             if (grant?.sourceUrl) window.open(grant.sourceUrl, "_blank");
           }}
         >
-          Apply Now <ExternalLink size={16} />
+          Ariza berish <ExternalLink size={16} />
         </Button>
       </div>
     </Card>

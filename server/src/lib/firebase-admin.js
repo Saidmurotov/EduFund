@@ -1,7 +1,5 @@
 import admin from "firebase-admin";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "./env.js";
 
 // Firebase Admin init:
 // - Option A: GOOGLE_APPLICATION_CREDENTIALS points to JSON key file

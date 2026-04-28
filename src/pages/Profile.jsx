@@ -9,7 +9,7 @@ import { useToast } from "../context/ToastContext.jsx";
 import {
   GraduationCap, BookOpen, BarChart2, Globe, Goal,
   Settings, LogOut, Edit3, ShieldCheck, ChevronRight,
-  CheckCircle2, Flame, Bookmark, Calendar, X
+  CheckCircle2, Flame, Bookmark, Calendar, X, MapPin
 } from "lucide-react";
 import { initials } from "../lib/utils.js";
 import { DEGREE_CHOICES } from "../lib/constants.js";
@@ -55,10 +55,20 @@ export default function Profile() {
   const handleSave = async () => {
     if (!user?.uid) return;
     try {
+      const normalizedForm = {
+        ...editForm,
+        targetCountries: Array.isArray(editForm.targetCountries)
+          ? editForm.targetCountries
+          : String(editForm.targetCountries || "")
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+      };
       await updateDoc(doc(db, "userProfiles", user.uid), {
-        preferences: editForm
+        preferences: normalizedForm
       });
-      setPref(editForm);
+      setPref(normalizedForm);
+      setEditForm(normalizedForm);
       setIsEditOpen(false);
       toast?.showToast?.("Profil muvaffaqiyatli saqlandi!", "success");
     } catch (e) {
@@ -131,7 +141,7 @@ export default function Profile() {
               <ProfileField label="GPA" value={pref?.gpa ? `${pref.gpa} (${pref.gpaSystem})` : "—"} Icon={BarChart2} color="text-teal-400" />
               <ProfileField label="IELTS / TOEFL" value={pref?.ielts ? `${pref.ielts} (IELTS)` : pref?.toefl ? `${pref.toefl} (TOEFL)` : "—"} Icon={Globe} color="text-indigo-400" />
               <ProfileField label="SAT / GRE / GMAT" value={pref?.sat ? `${pref.sat} (SAT)` : pref?.gre ? `${pref.gre} (GRE)` : pref?.gmat ? `${pref.gmat} (GMAT)` : "—"} Icon={Goal} color="text-rose-400" />
-              <ProfileField label="Sohalar" value={pref?.fields?.length ? pref.fields.join(', ') : "—"} Icon={BookOpen} color="text-orange-400" />
+              <ProfileField label="Soha" value={pref?.fields?.length ? pref.fields.join(', ') : pref?.field || "—"} Icon={BookOpen} color="text-orange-400" />
               <ProfileField label="Viloyat" value={pref?.region || "—"} Icon={MapPin} color="text-cyan-400" />
             </div>
 
@@ -246,8 +256,8 @@ export default function Profile() {
                     type="number"
                     step="0.01"
                     className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
-                    value={editForm.gpa}
-                    onChange={(e) => setEditForm(p => ({ ...p, gpa: Number(e.target.value) }))}
+                    value={editForm.gpa ?? ""}
+                    onChange={(e) => setEditForm(p => ({ ...p, gpa: e.target.value === "" ? null : Number(e.target.value) }))}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -256,8 +266,8 @@ export default function Profile() {
                     type="number"
                     step="0.5"
                     className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
-                    value={editForm.ielts}
-                    onChange={(e) => setEditForm(p => ({ ...p, ielts: Number(e.target.value) }))}
+                    value={editForm.ielts ?? ""}
+                    onChange={(e) => setEditForm(p => ({ ...p, ielts: e.target.value === "" ? null : Number(e.target.value) }))}
                   />
                 </div>
               </div>
@@ -268,8 +278,8 @@ export default function Profile() {
                   <input
                     type="number"
                     className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
-                    value={editForm.toefl}
-                    onChange={(e) => setEditForm(p => ({ ...p, toefl: Number(e.target.value) }))}
+                    value={editForm.toefl ?? ""}
+                    onChange={(e) => setEditForm(p => ({ ...p, toefl: e.target.value === "" ? null : Number(e.target.value) }))}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -277,8 +287,8 @@ export default function Profile() {
                   <input
                     type="number"
                     className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
-                    value={editForm.sat}
-                    onChange={(e) => setEditForm(p => ({ ...p, sat: Number(e.target.value) }))}
+                    value={editForm.sat ?? ""}
+                    onChange={(e) => setEditForm(p => ({ ...p, sat: e.target.value === "" ? null : Number(e.target.value) }))}
                   />
                 </div>
               </div>
@@ -287,11 +297,31 @@ export default function Profile() {
                 <label className="text-xs font-bold text-slate-500 uppercase">Daraja</label>
                 <select
                   className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4] appearance-none"
-                  value={editForm.degree}
+                  value={editForm.degree || ""}
                   onChange={(e) => setEditForm(p => ({ ...p, degree: e.target.value }))}
                 >
                   {DEGREE_CHOICES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Soha</label>
+                <input
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
+                  value={editForm.field || ""}
+                  onChange={(e) => setEditForm(p => ({ ...p, field: e.target.value }))}
+                  placeholder="Masalan: Computer Science"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase">Maqsad davlatlar</label>
+                <input
+                  className="w-full bg-[#0F172A] border border-[#334155] rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-[#3D3DC4]"
+                  value={Array.isArray(editForm.targetCountries) ? editForm.targetCountries.join(", ") : editForm.targetCountries || ""}
+                  onChange={(e) => setEditForm(p => ({ ...p, targetCountries: e.target.value }))}
+                  placeholder="Germany, USA, South Korea"
+                />
               </div>
             </div>
 

@@ -20,8 +20,12 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const hasPreferences =
+    user.preferences && Object.keys(user.preferences).length > 0;
+  const needsOnboarding = user.onboarded !== true && !hasPreferences;
+
   // Redirect to onboarding if not done, but don't loop if already on /onboarding
-  if (user.onboarded === false && window.location.pathname !== "/onboarding") {
+  if (needsOnboarding && window.location.pathname !== "/onboarding") {
      return <Navigate to="/onboarding" replace />;
   }
 

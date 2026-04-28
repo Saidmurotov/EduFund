@@ -10,7 +10,11 @@ const GRANT_TYPES = [
   "Conference", "Research", "Stajirovka", "Language Program"
 ];
 
-const FUNDING_TYPES = ["Full Fund", "Partial", "Stipend"];
+const FUNDING_TYPES = [
+  { label: "Full Fund", value: "full" },
+  { label: "Partial", value: "partial" },
+  { label: "Stipend", value: "stipend" },
+];
 
 function Chip({ label, active, onClick }) {
   return (
@@ -104,10 +108,10 @@ function FilterPanel({ filters, setFilters, toggleFilter, clearFilters, _onClose
         <div className="flex flex-wrap gap-2">
           {FUNDING_TYPES.map(f => (
             <Chip
-              key={f}
-              label={f}
-              active={filters.funding.includes(f.toLowerCase())}
-              onClick={() => toggleFilter('funding', f.toLowerCase())}
+              key={f.value}
+              label={f.label}
+              active={filters.funding.includes(f.value)}
+              onClick={() => toggleFilter('funding', f.value)}
             />
           ))}
         </div>
@@ -173,7 +177,8 @@ export default function Search() {
           fundingType: filters.funding,
           sort: sortBy,
           myMatch: filters.myMatch,
-          userId: user?.uid
+          userId: user?.uid,
+          limit: 100,
         };
         const res = await api.get("/grants", { params, headers });
         setGrants(Array.isArray(res.data) ? res.data : []);

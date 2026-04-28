@@ -59,6 +59,7 @@ export default function CalendarModal({ grant, isOpen, onClose }) {
             const planRef = doc(db, "userCalendars", user.uid, "plans", planId);
 
             await setDoc(planRef, {
+                userId: user.uid,
                 grantId: planId,
                 grantTitle: grant.title,
                 country: grant.country,

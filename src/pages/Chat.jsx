@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Info, SendHorizonal } from "lucide-react";
 import MessageBubble from "../components/chat/MessageBubble.jsx";
 import { useAuth } from "../hooks/useAuth.js";
-import { askGemini } from "../lib/gemini.js";
+import { api, withAuth } from "../lib/api.js";
 import { useToast } from "../context/ToastContext.jsx";
 
 const LIMIT = 5;
@@ -33,7 +33,7 @@ function setLimitState(state) {
 }
 
 export default function Chat() {
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
   const toast = useToast();
 
   const [messages, setMessages] = useState(() => [
@@ -52,7 +52,8 @@ export default function Chat() {
   const scrollerRef = useRef(null);
 
   const usedToday = limit.count;
-  const limitReached = usedToday >= LIMIT;
+  const isPremium = Boolean(user?.isPremium);
+  const limitReached = !isPremium && usedToday >= LIMIT;
 
   const conversationHistory = useMemo(() => {
     return messages.map((m) => ({ role: m.role, content: m.content }));
@@ -104,7 +105,16 @@ export default function Chat() {
     ]);
 
     try {
-      const replyText = await askGemini(text, conversationHistory);
+      const headers = await withAuth(getIdToken);
+      const res = await api.post(
+        "/ai/chat",
+        {
+          message: text,
+          conversationHistory,
+        },
+        { headers }
+      );
+      const replyText = res.data?.reply || "Javob topilmadi.";
 
       setMessages((p) =>
         p.map((m) =>
@@ -112,9 +122,11 @@ export default function Chat() {
         )
       );
 
-      const next = { date: todayKey(), count: usedToday + 1 };
-      setLimit(next);
-      setLimitState(next);
+      if (!isPremium) {
+        const next = { date: todayKey(), count: usedToday + 1 };
+        setLimit(next);
+        setLimitState(next);
+      }
     } catch (e) {
       console.error(e);
       setMessages((p) => p.filter((m) => m.id !== typingId));
@@ -151,9 +163,14 @@ export default function Chat() {
       )}
 
       <div className="mt-4 flex items-center justify-between">
-        {!limitReached && (
+        {!isPremium && !limitReached && (
           <div className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30">
             FREE: {usedToday}/{LIMIT} USED TODAY
+          </div>
+        )}
+        {isPremium && (
+          <div className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#3D3DC4]/15 text-[#8B8BFF] border border-[#3D3DC4]/30">
+            PREMIUM: yuqori limit
           </div>
         )}
         {error && <div className="text-sm text-[#EF4444]">{error}</div>}

@@ -101,20 +101,12 @@ export default function GrantDetail() {
       setError("");
       try {
         const headers = await withAuth(getIdToken);
-        const [gRes, mRes] = await Promise.all([
-          api.get(`/grants/${id}`, { headers }),
-          user?.uid
-            ? api.get(`/grants/match/${user.uid}`, { headers })
-            : Promise.resolve({ data: [] }),
-        ]);
+        const gRes = await api.get(`/grants/${id}`, { headers });
 
         if (!alive) return;
         const g = gRes.data;
         setGrant(g);
-
-        const list = Array.isArray(mRes.data) ? mRes.data : [];
-        const matched = list.find((x) => String(x.id) === String(id));
-        setMatchPercent(matched?.matchPercent || 0);
+        setMatchPercent(g?.matchPercent || 0);
 
         // Fetch user preferences for real match analysis
         if (user?.uid && db) {
@@ -412,7 +404,7 @@ export default function GrantDetail() {
           disabled={saving}
         >
           <Bookmark size={16} />
-          {saving ? "Saving..." : "Save Grant"}
+          {saving ? "Saqlanmoqda..." : "Grantni saqlash"}
         </Button>
         <Button
           type="button"
@@ -421,7 +413,7 @@ export default function GrantDetail() {
             if (grant?.sourceUrl) window.open(grant.sourceUrl, "_blank");
           }}
         >
-          Apply Now <ExternalLink size={16} />
+          Ariza berish <ExternalLink size={16} />
         </Button>
       </div>
 

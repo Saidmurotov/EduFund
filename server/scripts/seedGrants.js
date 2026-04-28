@@ -1,5 +1,6 @@
 import admin from "firebase-admin";
 import dotenv from "dotenv";
+import { normalizeGrantForIndex } from "../src/lib/grant-utils.js";
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const COLLECTION = "opportunities";
+const COLLECTION = "grants";
 
 const NEW_GRANTS = [
   // Conference
@@ -191,7 +192,7 @@ async function seed() {
   console.log("Seeding new grants...");
   for (const grant of NEW_GRANTS) {
     const ref = db.collection(COLLECTION).doc(grant.opportunityId);
-    await ref.set({ ...grant, createdAt: new Date() }, { merge: true });
+    await ref.set({ ...grant, ...normalizeGrantForIndex(grant), createdAt: new Date() }, { merge: true });
     console.log(`  ✓ ${grant.opportunityId}: ${grant.title}`);
   }
   console.log(`Done. ${NEW_GRANTS.length} grants seeded.`);

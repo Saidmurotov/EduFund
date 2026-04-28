@@ -1,30 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Foydalanuvchi tizimga kirganini tekshirish funksiyasi
-    function isSignedIn() { return request.auth != null; }
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-    // Foydalanuvchi profillari
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function currentUserProfile() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid));
+    }
+
+    function hasRole(roleName) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid))
+        && currentUserProfile().data.role == roleName;
+    }
+
+    function canManageGrants() {
+      return hasRole("admin") || hasRole("partner");
+    }
+
     match /userProfiles/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isOwner(userId)
+        && request.resource.data.userId == userId
+        && request.resource.data.role == "student"
+        && request.resource.data.isPremium == false;
+      allow read: if isOwner(userId) || hasRole("admin");
+      allow update: if isOwner(userId)
+        && request.resource.data.userId == resource.data.userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role", "isPremium"]);
+      allow delete: if false;
     }
 
-    // Grantlar (Hamma o'qiy oladi)
     match /grants/{grantId} {
-      allow read: if true;
-      allow write: if isSignedIn(); 
+      allow read: if isSignedIn();
+      allow create, update, delete: if canManageGrants();
     }
 
-    // Taqvim va Vazifalar (Upcoming Tasks uchun)
+    match /savedGrants/{userId}/items/{itemId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && (!("userId" in request.resource.data) || request.resource.data.userId == userId);
+    }
+
+    match /userCalendars/{userId}/plans/{planId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    match /notifications/{userId}/items/{notificationId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if false;
+    }
+
     match /calendarEvents/{eventId} {
-      allow read, write: if isSignedIn() && (
-        resource == null || resource.data.userId == request.auth.uid
-      );
+      allow read, delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create, update: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
     }
 
-    // Boshqa barcha kolleksiyalarga umumiy xavfsiz ruxsat
+    match /paymentIntents/{paymentIntentId} {
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == "pending";
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
-      allow read, write: if isSignedIn();
+      allow read, write: if false;
     }
   }
 }

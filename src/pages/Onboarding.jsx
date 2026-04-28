@@ -250,6 +250,7 @@ export default function Onboarding() {
             goals: form.goals,
             targetCountries: form.targetCountries,
           },
+          onboarded: true,
         },
         { merge: true }
       );

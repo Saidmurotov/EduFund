@@ -53,7 +53,10 @@ export default function StatCards() {
 
         // Count upcoming deadlines (this week)
         const headers = await withAuth(getIdToken);
-        const res = await api.get(`/grants/match/${user.uid}`, { headers });
+        const res = await api.get(`/grants/match/${user.uid}`, {
+          params: { limit: 100 },
+          headers,
+        });
         if (!alive) return;
         const grantsList = Array.isArray(res.data) ? res.data : [];
         const upcoming = grantsList.filter((g) => {
