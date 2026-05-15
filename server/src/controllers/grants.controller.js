@@ -222,6 +222,21 @@ async function queryGrantCandidates({ filters, limit, cursor, sort }) {
   };
 }
 
+async function queryGrantCandidatesFallback({ filters, limit, sort }) {
+  const snapshot = await db.collection(COLLECTION).limit(MAX_QUERY_CANDIDATES).get();
+  const grants = snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .filter((grant) => grantMatchesFilters(grant, filters));
+
+  return {
+    grants: sortGrants(grants, sort).slice(0, limit),
+    nextCursor: "",
+    readCount: snapshot.size,
+    resultMode: "scan_fallback",
+    serverFilter: "none",
+  };
+}
+
 async function queryBySignal({ field, op, values, limit }) {
   if (!values.length) return [];
 
@@ -321,12 +336,24 @@ export async function getAllGrants(req, res) {
     const pageSize = parsePositiveInt(req.query.limit, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
     const filters = parseGrantFilters(req.query);
     const myMatch = String(req.query.myMatch || "").toLowerCase() === "true";
-    const { grants, nextCursor, readCount, resultMode, serverFilter } = await queryGrantCandidates({
-      filters,
-      limit: pageSize,
-      cursor: req.query.cursor,
-      sort: req.query.sort,
-    });
+    let queryResult;
+    try {
+      queryResult = await queryGrantCandidates({
+        filters,
+        limit: pageSize,
+        cursor: req.query.cursor,
+        sort: req.query.sort,
+      });
+    } catch (queryError) {
+      console.warn("[getAllGrants] Indexed query failed, using scan fallback:", queryError.message);
+      queryResult = await queryGrantCandidatesFallback({
+        filters,
+        limit: pageSize,
+        sort: req.query.sort,
+      });
+    }
+
+    const { grants, nextCursor, readCount, resultMode, serverFilter } = queryResult;
 
     // Since route is protected, req.user exists
     let result = grants;
