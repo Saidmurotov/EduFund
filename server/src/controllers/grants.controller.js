@@ -48,6 +48,96 @@ function parseGrantFilters(query) {
   };
 }
 
+function isGrantlarUrl(value) {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "") === "grantlar.uz";
+  } catch {
+    return false;
+  }
+}
+
+function stripTags(value) {
+  return String(value || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function htmlDecode(value) {
+  return String(value || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function extractOriginalUrl(html, sourceUrl) {
+  const source = new URL(sourceUrl);
+  const skipHosts = [
+    "grantlar.uz",
+    "facebook.com",
+    "twitter.com",
+    "x.com",
+    "t.me",
+    "telegram.me",
+    "instagram.com",
+    "youtube.com",
+    "linkedin.com",
+    "wa.me",
+  ];
+
+  const candidates = [];
+  const anchorRe = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = anchorRe.exec(html))) {
+    const attrs = match[1] || "";
+    const hrefMatch = attrs.match(/\bhref\s*=\s*["']([^"']+)["']/i);
+    if (!hrefMatch) continue;
+
+    const rawHref = htmlDecode(hrefMatch[1]).trim();
+    if (!rawHref || rawHref.startsWith("#") || /^(mailto|tel|javascript):/i.test(rawHref)) continue;
+
+    let url;
+    try {
+      url = new URL(rawHref, source);
+    } catch {
+      continue;
+    }
+
+    const host = url.hostname.replace(/^www\./, "");
+    if (skipHosts.some((skip) => host === skip || host.endsWith(`.${skip}`))) continue;
+
+    const text = stripTags(match[2]).toLowerCase();
+    const href = url.href.toLowerCase();
+    let score = 1;
+
+    if (/(apply|application|register|registration|official|website)/i.test(`${text} ${href}`)) score += 10;
+    if (/(ariza|ro'yxat|royxat|rasmiy|sayt|batafsil|topshirish)/i.test(text)) score += 10;
+    if (/\.(pdf|docx?|xlsx?)($|\?)/i.test(url.pathname)) score -= 5;
+
+    candidates.push({ url: url.href, score });
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0]?.url || null;
+}
+
+function applyUrlFromGrant(grant) {
+  return (
+    grant?.applicationUrl ||
+    grant?.originalUrl ||
+    grant?.officialUrl ||
+    grant?.applyUrl ||
+    grant?.url ||
+    grant?.link ||
+    null
+  );
+}
+
 function chooseServerFilter(filters) {
   const options = [
     { field: "searchTokens", op: "array-contains-any", values: filters.searchTerms },
@@ -291,6 +381,54 @@ export async function getGrantById(req, res) {
   } catch (error) {
     console.error("[getGrantById] Error:", error);
     return res.status(500).json({ message: "Grantni olishda xato yuz berdi." });
+  }
+}
+
+export async function getGrantApplyUrl(req, res) {
+  try {
+    const { id } = req.params;
+    const docRef = db.collection(COLLECTION).doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ message: "Grant topilmadi." });
+    }
+
+    const grant = { id: doc.id, ...doc.data() };
+    const directUrl = applyUrlFromGrant(grant);
+    if (directUrl) {
+      return res.json({ url: directUrl });
+    }
+
+    if (!grant.sourceUrl) {
+      return res.status(404).json({ message: "Ariza havolasi topilmadi." });
+    }
+
+    if (!isGrantlarUrl(grant.sourceUrl)) {
+      return res.json({ url: grant.sourceUrl });
+    }
+
+    const response = await fetch(grant.sourceUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 EduFund/1.0",
+      },
+    });
+
+    if (!response.ok) {
+      return res.json({ url: grant.sourceUrl });
+    }
+
+    const html = await response.text();
+    const originalUrl = extractOriginalUrl(html, grant.sourceUrl);
+    if (!originalUrl) {
+      return res.json({ url: grant.sourceUrl });
+    }
+
+    await docRef.set({ applicationUrl: originalUrl, updatedAt: new Date() }, { merge: true });
+    return res.json({ url: originalUrl });
+  } catch (error) {
+    console.error("[getGrantApplyUrl] Error:", error);
+    return res.status(500).json({ message: "Ariza havolasini olishda xato yuz berdi." });
   }
 }
 

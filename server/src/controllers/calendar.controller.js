@@ -17,6 +17,9 @@ export async function generateCalendarPlan(req, res) {
         if (!safeGrantTitle || !deadline) {
             return res.status(400).json({ message: "grantTitle va deadline majburiy." });
         }
+        if (userId && req.user.uid !== userId && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Bu foydalanuvchi nomidan reja yaratishga ruxsat yo'q." });
+        }
 
         const systemPrompt = "Sen professional ta'lim va grantlar bo'yicha maslahatchisan.";
 

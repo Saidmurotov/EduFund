@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useToast } from "../context/ToastContext.jsx";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import SEO from "../components/SEO.jsx";
 
 export default function Login() {
   const { user, loginWithEmail, loginWithGoogle } = useAuth();
@@ -64,6 +65,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] px-4">
+      <SEO
+        title="EduFund AI - Kirish"
+        description="EduFund AI hisobingizga kiring va sizga mos grantlar hamda stipendiyalarni kuzating."
+        path="/login"
+        robots="noindex, follow"
+      />
       <div className="w-full max-w-[420px]">
         <div className="bg-white rounded-[20px] shadow-xl shadow-black/5 border border-[#E5E7EB] p-8">
           {/* Logo */}

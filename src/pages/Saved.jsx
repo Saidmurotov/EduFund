@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth.js";
 import { db } from "../lib/firebase.js";
 import { collection, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
 import Card from "../components/ui/Card.jsx";
+import Button from "../components/ui/Button.jsx";
 import GrantCard from "../components/dashboard/GrantCard.jsx";
 import { Bookmark, Send, Calendar, ChevronRight, LayoutGrid, List } from "lucide-react";
 
@@ -16,7 +17,10 @@ export default function Saved() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     // Real-time saved grants
@@ -25,14 +29,33 @@ export default function Saved() {
       orderBy("savedAt", "desc")
     );
     const unsubSaved = onSnapshot(q, (snap) => {
-      setSavedGrants(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setSavedGrants(
+        snap.docs.map((d) => {
+          const saved = d.data();
+          return {
+            id: saved.grantId || saved.grantData?.id || d.id,
+            savedId: d.id,
+            savedAt: saved.savedAt,
+            ...(saved.grantData || saved),
+          };
+        })
+      );
+      setLoading(false);
+    }, (e) => {
+      console.error("Saved grants fetch error:", e);
+      setSavedGrants([]);
       setLoading(false);
     });
 
     // Fetch plans once
     async function fetchPlans() {
-      const snap = await getDocs(collection(db, "userCalendars", user.uid, "plans"));
-      setPlans(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      try {
+        const snap = await getDocs(collection(db, "userCalendars", user.uid, "plans"));
+        setPlans(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        console.error("Saved plans fetch error:", e);
+        setPlans([]);
+      }
     }
     fetchPlans();
 
@@ -115,7 +138,7 @@ export default function Saved() {
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
                         <h3 className="text-sm font-bold text-slate-50 truncate">{plan.grantTitle}</h3>
-                        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">{plan.country} • {total} ta bosqich</p>
+                        <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">{plan.country} / {total} ta bosqich</p>
                       </div>
                       <ChevronRight size={18} className="text-slate-700" />
                     </div>
@@ -144,7 +167,11 @@ function EmptyState({ icon: Icon, text, subtext, onAction, btnText }) {
       </div>
       <h2 className="text-xl font-bold text-slate-50">{text}</h2>
       <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto">{subtext}</p>
-      <Button onClick={onAction} className="mt-8 px-10">
+      <Button
+        type="button"
+        onClick={onAction}
+        className="mt-8 px-10"
+      >
         {btnText}
       </Button>
     </Card>

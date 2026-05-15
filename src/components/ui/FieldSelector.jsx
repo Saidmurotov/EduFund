@@ -28,7 +28,7 @@ export default function FieldSelector({ value, onChange }) {
       setOtherValue(value);
     } else if (value === "Other") {
       setIsOther(true);
-      if (!otherValue) setOtherValue("");
+      setOtherValue("");
     } else if (!value) {
       setIsOther(false);
       setOtherValue("");

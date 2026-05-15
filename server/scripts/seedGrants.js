@@ -11,7 +11,7 @@ if (!admin.apps.length) {
   if (saJson) {
     admin.initializeApp({ credential: admin.credential.cert(JSON.parse(saJson)) });
   } else if (saPath) {
-    admin.initializeApp({ credential: admin.credential.cert(saPath) });
+    admin.initializeApp({ credential: admin.credential.applicationDefault() });
   } else {
     // Standard approach
     admin.initializeApp({ credential: admin.credential.applicationDefault() });

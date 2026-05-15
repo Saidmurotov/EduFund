@@ -20,8 +20,8 @@ export default function UpcomingTasks() {
         return;
       }
       
-      let timer = setTimeout(() => {
-        if (loading && alive) {
+      const timer = setTimeout(() => {
+        if (alive) {
           console.warn("UpcomingTasks loading timeout");
         }
       }, 5000);
@@ -60,6 +60,7 @@ export default function UpcomingTasks() {
         console.error("UpcomingTasks fetch error:", e);
         if (alive) setTasks([]); // Xatolikda bo'sh array qaytaramiz
       } finally {
+        clearTimeout(timer);
         if (alive) setLoading(false);
       }
     }

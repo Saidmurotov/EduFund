@@ -1,9 +1,8 @@
 import { Router } from "express";
-import admin from "firebase-admin";
 import { verifyToken, isAdmin } from "../middleware/verifyToken.js";
+import { db } from "../lib/firebase-admin.js";
 
 const router = Router();
-const db = admin.firestore();
 const MAX_ADMIN_STATS_SCAN = Number(process.env.MAX_ADMIN_STATS_SCAN || 5000);
 
 function toDate(value) {

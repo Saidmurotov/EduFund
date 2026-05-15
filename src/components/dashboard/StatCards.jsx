@@ -9,15 +9,15 @@ import { api, withAuth } from "../../lib/api.js";
 
 function StatCard({ title, value, Icon }) {
   return (
-    <Card className="flex-1 min-w-[200px] bg-[#1E293B] border-[#334155] rounded-xl p-[1rem]">
+    <Card className="flex-1 min-w-[200px] bg-white dark:bg-[#1E293B] border-slate-200 dark:border-[#334155] rounded-xl p-[1rem] shadow-sm dark:shadow-none">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-xs text-[#64748B] font-semibold tracking-wide">
+          <div className="text-xs text-slate-500 dark:text-[#64748B] font-semibold tracking-wide">
             {title}
           </div>
-          <div className="text-lg font-semibold text-slate-50 mt-1">{value}</div>
+          <div className="text-lg font-semibold text-slate-900 dark:text-slate-50 mt-1">{value}</div>
         </div>
-        <div className="h-10 w-10 rounded-xl bg-[#0F172A] border border-[#334155] flex items-center justify-center text-slate-200">
+        <div className="h-10 w-10 rounded-xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-[#334155] flex items-center justify-center text-slate-600 dark:text-slate-200">
           <Icon size={18} />
         </div>
       </div>

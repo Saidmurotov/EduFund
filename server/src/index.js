@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import "./lib/env.js";
 
 import authRoutes from "./routes/auth.routes.js";
@@ -14,6 +16,8 @@ import "express-async-errors";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isDirectRun =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -24,8 +28,9 @@ const corsOrigin = allowedOrigins.includes("*")
     ? allowedOrigins
     : "http://localhost:5173";
 
-// Start daily check job
-initNotificationJob();
+if (isDirectRun && process.env.VERCEL !== "1") {
+  initNotificationJob();
+}
 
 // CORS: Produksion muhitda faqat o'zingizning frontend URL-ingizni kiriting
 app.use(cors({
@@ -52,7 +57,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Serverda ichki xato yuz berdi." });
 });
 
-app.listen(PORT, () => {
-  console.log(`EduFund AI backend listening on port ${PORT}`);
-});
+if (isDirectRun && process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`EduFund AI backend listening on port ${PORT}`);
+  });
+}
+
+export default app;
 

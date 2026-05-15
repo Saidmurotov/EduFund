@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /chat
+Disallow: /calendar
+Disallow: /saved
+Disallow: /roadmap
+Disallow: /profile
+Disallow: /premium
+Disallow: /admin
+Disallow: /api
+
+Sitemap: https://edu-fund.uz/sitemap.xml
+

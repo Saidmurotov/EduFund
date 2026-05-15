@@ -5,8 +5,8 @@ export default function GreetingHeader({ name, count }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div>
-        <div className="text-xl font-semibold text-slate-50">
-          Welcome back, {name || "Student"} <span className="inline-block">👋</span>
+        <div className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+          Welcome back, {name || "Student"} <span className="inline-block">{"\uD83D\uDC4B"}</span>
         </div>
         <div className="text-sm text-[#3D3DC4] mt-1 font-medium">
           Sizga {count} ta mos grant topildi
@@ -22,4 +22,3 @@ export default function GreetingHeader({ name, count }) {
     </div>
   );
 }
-

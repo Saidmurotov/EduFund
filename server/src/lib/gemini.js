@@ -4,12 +4,16 @@ import "./env.js";
 const apiKey = process.env.GOOGLE_API_KEY;
 if (!apiKey) {
   console.warn(
-    "[Gemini] GOOGLE_API_KEY topilmadi. /api/ai endpointlari xato qaytaradi."
+    "[Gemini] GOOGLE_API_KEY topilmadi. /api/ai endpointlari fallback javoblardan foydalanadi."
   );
 }
 
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 const MODEL_NAME = "gemini-1.5-flash";
+
+export function isGeminiConfigured() {
+  return Boolean(genAI);
+}
 
 export async function askGemini(prompt, systemPrompt) {
   if (!genAI) {

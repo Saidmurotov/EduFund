@@ -10,9 +10,8 @@ import {
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useAuth } from "../hooks/useAuth.js";
-import { api, withAuth } from "../lib/api.js";
 import { db } from "../lib/firebase.js";
-import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 function iconFor(name) {
   const n = String(name || "").toLowerCase();
@@ -25,59 +24,56 @@ function iconFor(name) {
 }
 
 export default function Roadmap() {
-  const { user, getIdToken } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [data, setData] = useState(null);
-  const [grantTitle, setGrantTitle] = useState("your grant");
+  const [grantTitle, setGrantTitle] = useState("grant");
 
   useEffect(() => {
     let alive = true;
     async function load() {
-      if (!user?.uid) return;
+      if (!user?.uid) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
-      setError("");
-
-      let targetGrant = {
-        title: "DAAD Research Scholarship",
-        deadline: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90)
-          .toISOString()
-          .slice(0, 10),
-        requirements: {},
-      };
 
       try {
-        if (db) {
-          const q = query(
-            collection(db, "savedGrants", user.uid, "items"),
-            orderBy("savedAt", "desc"),
-            limit(1)
-          );
-          const snap = await getDocs(q);
-          const first = snap.docs[0]?.data();
-          if (first?.grantData?.title) {
-            targetGrant = {
-              title: first.grantData.title,
-              deadline: first.grantData.deadline || targetGrant.deadline,
-              requirements: first.grantData.requirements || {},
-            };
-          }
+        const plansSnap = await getDocs(collection(db, "userCalendars", user.uid, "plans"));
+        const latestPlan = plansSnap.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            const aTime = new Date(a.createdAt?.toDate?.() || a.createdAt || 0).getTime();
+            const bTime = new Date(b.createdAt?.toDate?.() || b.createdAt || 0).getTime();
+            return bTime - aTime;
+          })[0];
+
+        if (latestPlan) {
+          if (!alive) return;
+          setGrantTitle(latestPlan.grantTitle || "grant");
+          setData(latestPlan);
+          return;
         }
 
-        setGrantTitle(targetGrant.title || "your grant");
+        const savedSnap = await getDocs(collection(db, "savedGrants", user.uid, "items"));
+        const saved = savedSnap.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => Number(b.savedAt || 0) - Number(a.savedAt || 0))[0];
+        const grant = saved?.grantData || saved;
 
-        const headers = await withAuth(getIdToken);
-        const res = await api.post(
-          "/ai/roadmap",
-          { userId: user.uid, targetGrant },
-          { headers }
-        );
         if (!alive) return;
-        setData(res.data);
+        setGrantTitle(grant?.title || "grant");
+        setData({
+          grantTitle: grant?.title || "Tanlangan grant",
+          country: grant?.country || "",
+          deadline: grant?.deadline || "",
+          steps: [],
+        });
       } catch (e) {
-        console.error(e);
+        console.error("Roadmap load fallback:", e);
         if (!alive) return;
-        setError("Roadmapni yuklashda xato yuz berdi.");
+        setGrantTitle("grant");
+        setData({ grantTitle: "Tanlangan grant", steps: [] });
       } finally {
         if (alive) setLoading(false);
       }
@@ -87,7 +83,7 @@ export default function Roadmap() {
     return () => {
       alive = false;
     };
-  }, [user?.uid, getIdToken]);
+  }, [user?.uid]);
 
   const steps = Array.isArray(data?.steps) ? data.steps : [];
   const total = steps.length || 1;
@@ -103,16 +99,6 @@ export default function Roadmap() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="py-8">
-        <div className="text-sm text-[#EF4444] bg-[#1E293B] border border-[#EF4444]/40 rounded-lg px-3 py-2">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="py-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -124,12 +110,21 @@ export default function Roadmap() {
             </div>
           </div>
           <div className="text-sm text-[#64748B] mt-1">
-            {data?.totalMonths ? `${data.totalMonths}-month preparation plan` : "Preparation plan"}
+            {data?.totalMonths ? `${data.totalMonths}-month preparation plan` : data?.deadline ? `Deadline: ${data.deadline}` : "Preparation plan"}
           </div>
         </div>
       </div>
 
-      <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
+      {!steps.length && (
+        <Card className="bg-[#1E293B] border-[#334155] rounded-2xl text-center">
+          <div className="text-slate-50 font-semibold">Hali roadmap yaratilmagan</div>
+          <p className="text-sm text-slate-400 mt-2">
+            Grant sahifasidan "Plan My Application" orqali tayyorgarlik rejasini yarating.
+          </p>
+        </Card>
+      )}
+
+      {steps.length > 0 && <Card className="bg-[#1E293B] border-[#334155] rounded-2xl">
         <div className="text-sm text-slate-200">
           Step {currentStep} of {total} —{" "}
           <span className="text-slate-50 font-semibold">{percent}%</span> complete
@@ -137,7 +132,7 @@ export default function Roadmap() {
         <div className="mt-3 h-2 rounded-full bg-[#0F172A] border border-[#334155] overflow-hidden">
           <div className="h-full bg-[#2563EB]" style={{ width: `${percent}%` }} />
         </div>
-      </Card>
+      </Card>}
 
       <div className="space-y-4">
         {steps.map((s, idx) => {

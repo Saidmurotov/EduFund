@@ -25,7 +25,7 @@ export default function Dashboard() {
       setShowRetry(false);
       
       timer = setTimeout(() => {
-        if (loading && alive) {
+        if (alive) {
           setShowRetry(true);
         }
       }, 5000);
@@ -43,7 +43,7 @@ export default function Dashboard() {
       } catch (e) {
         console.error("Grantlarni API orqali yuklashda xato:", e);
         if (!alive) return;
-        setError("Grantlarni yuklashda xato yuz berdi. Iltimos qaytadan urinib ko'ring yoki .env sozlamalarini tekshiring.");
+        setError("Grantlarni yuklashda xato yuz berdi. Backend server ishlayotganini va VITE_API_BASE_URL sozlamasini tekshiring.");
       } finally {
         if (alive) setLoading(false);
         if (timer) clearTimeout(timer);
@@ -60,7 +60,9 @@ export default function Dashboard() {
     if (showRetry) {
       return (
         <div className="min-h-[400px] flex flex-col items-center justify-center p-8 bg-[#1E293B] border border-[#334155] rounded-3xl text-center">
-          <span className="text-4xl mb-4">⏳</span>
+          <span className="text-4xl mb-4" aria-hidden="true">
+            &#9203;
+          </span>
           <h3 className="text-xl font-bold text-slate-100 mb-2">Yuklash juda uzoq davom etmoqda</h3>
           <p className="text-slate-400 text-sm mb-6 max-w-xs">Internet aloqangizni tekshiring yoki qayta urinib ko'ring.</p>
           <button 
@@ -77,10 +79,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-[1.5rem]">
-      {/* Greeting — full width */}
+      {/* Greeting - full width */}
       <GreetingHeader name={user?.name || user?.email} count={grants.length} />
 
-      {/* Stats — wide grid on desktop */}
+      {/* Stats - wide grid on desktop */}
       <StatCards totalGrants={totalDbCount} />
 
       {/* Error */}

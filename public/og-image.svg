@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">EduFund AI</title>
+  <desc id="desc">Grantlar, stipendiyalar va xorijda o'qish imkoniyatlari</desc>
+  <rect width="1200" height="630" fill="#0F172A"/>
+  <rect x="72" y="72" width="1056" height="486" rx="36" fill="#111C33" stroke="#334155" stroke-width="2"/>
+  <rect x="112" y="116" width="92" height="92" rx="24" fill="#3D3DC4"/>
+  <text x="158" y="174" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF">EF</text>
+  <text x="240" y="154" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF">EduFund AI</text>
+  <text x="240" y="194" font-family="Arial, sans-serif" font-size="22" fill="#93A4BC">Grant &amp; stipendiya assistant</text>
+  <text x="112" y="314" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="#FFFFFF">Grantlar va stipendiyalar</text>
+  <text x="112" y="376" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#C7D2FE">O'zbekistonlik talabalar uchun AI platforma</text>
+  <text x="112" y="446" font-family="Arial, sans-serif" font-size="24" fill="#CBD5E1">Xorijda o'qish imkoniyatlari, deadline reja va match tahlili</text>
+  <circle cx="1004" cy="168" r="64" fill="#2563EB" opacity="0.9"/>
+  <circle cx="914" cy="430" r="96" fill="#10B981" opacity="0.75"/>
+</svg>
