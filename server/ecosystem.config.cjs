@@ -1,5 +1,3 @@
-require('dotenv').config({ path: '.env' });
-
 const PORT = process.env.PORT || 3001;
 
 module.exports = {
@@ -10,6 +8,7 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       watch: false,
+      env_file: '.env', // PM2 will load environment variables from .env
       env: {
         NODE_ENV: 'development',
         PORT,
@@ -32,4 +31,3 @@ module.exports = {
     },
   ],
 };
-

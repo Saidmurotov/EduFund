@@ -17,7 +17,11 @@ export function isGeminiConfigured() {
 
 export async function askGemini(prompt, systemPrompt) {
   if (!genAI) {
-    throw new Error("Gemini API not configured (GOOGLE_API_KEY yo'q).");
+    // GOOGLE_API_KEY yo'q bo'lsa, xato tashlash o'rniga fallback javob qaytaramiz
+    return {
+      reply: "AI xizmati hozircha mavjud emas. Iltimos, keyinroq urinib ko'ring.",
+      tokensUsed: 0,
+    };
   }
 
   try {
@@ -43,4 +47,3 @@ export async function askGemini(prompt, systemPrompt) {
     throw new Error("Gemini bilan so'rovda xato yuz berdi.");
   }
 }
-
