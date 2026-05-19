@@ -1,3 +1,7 @@
+require('dotenv').config({ path: '.env' });
+
+const PORT = process.env.PORT || 3001;
+
 module.exports = {
   apps: [
     {
@@ -8,11 +12,11 @@ module.exports = {
       watch: false,
       env: {
         NODE_ENV: 'development',
-        PORT: 3001,
+        PORT,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3001,
+        PORT,
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
