@@ -41,7 +41,7 @@ app.use(cors({
 app.use(express.json({ limit: "32kb" }));
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok OK", time: new Date() });
+  res.json({ status: "ok", time: new Date() });
 });
 
 app.use("/api/auth", authRoutes);
@@ -57,7 +57,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Serverda ichki xato yuz berdi." });
 });
 
-if (isDirectRun && process.env.VERCEL !== "1") {
+// Start the server unless we're running in Vercel or in a test environment.
+// Previously the app only listened when `isDirectRun` was true, but PM2
+// starts the process with `-r dotenv/config` which changes argv and caused
+// the server not to bind. Using NODE_ENV !== 'test' is safer and preserves
+// test behavior.
+if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`EduFund AI backend listening on port ${PORT}`);
   });

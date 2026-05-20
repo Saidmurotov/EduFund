@@ -2,12 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import "./env.js";
 
 const apiKey = process.env.GOOGLE_API_KEY;
-if (!apiKey) {
-  console.warn(
-    "[Gemini] GOOGLE_API_KEY topilmadi. /api/ai endpointlari fallback javoblardan foydalanadi."
-  );
-}
-
+// Do not spam logs when API key is missing. We'll silently disable Gemini and
+// return a safe fallback from `askGemini`. This avoids noisy PM2 logs and
+// prevents crashes when the key isn't provided.
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 const MODEL_NAME = "gemini-1.5-flash";
 
@@ -43,7 +40,13 @@ export async function askGemini(prompt, systemPrompt) {
 
     return { reply: text, tokensUsed };
   } catch (error) {
-    console.error("[Gemini] Error:", error);
-    throw new Error("Gemini bilan so'rovda xato yuz berdi.");
+    // Log the error for debugging but return a safe fallback so callers don't
+    // crash or propagate unexpected exceptions. This keeps the API resilient
+    // if Gemini calls fail at runtime.
+    console.error("[Gemini] Error:", error?.message || error);
+    return {
+      reply: "AI xizmati hozircha mavjud emas yoki xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.",
+      tokensUsed: 0,
+    };
   }
 }
